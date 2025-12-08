@@ -10,7 +10,7 @@ set -e
 REPO_DIR="/home/ubuntu/acquisitions"
 TODAY=$(date +%Y-%m-%d)
 REPORT_FILE="enhanced_ma_report_${TODAY}.md"
-WEBHOOK_URL="https://hook.us2.make.com/4c7xqjcjt3yxhbdvnxkw5u6qxr6cqb3y"
+WEBHOOK_URL="https://hook.us2.make.com/e5racqynovtehtqosma6geutfi6ksy26"
 
 echo "========================================================================"
 echo "M&A PRESS RELEASE MONITORING - $(date)"

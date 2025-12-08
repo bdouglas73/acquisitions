@@ -20,7 +20,7 @@ import time
 # Configuration
 BUSINESS_WIRE_URL = "https://www.businesswire.com/newsroom?language=en&subject=1000011&region=1000490&filter=1958561"
 GITHUB_REPO_PATH = "/home/ubuntu/acquisitions"
-MAKE_WEBHOOK_URL = "https://hook.us2.make.com/4c7xqjcjt3yxhbdvnxkw5u6qxr6cqb3y"  # Update this URL
+MAKE_WEBHOOK_URL = "https://hook.us2.make.com/e5racqynovtehtqosma6geutfi6ksy26"  # Update this URL
 
 USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 
