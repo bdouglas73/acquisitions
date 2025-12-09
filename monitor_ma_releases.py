@@ -1,3 +1,4 @@
+
 #!/usr/bin/env python3
 """
 M&A Press Release Monitoring Script with Smart Deduplication
@@ -5,8 +6,7 @@ Automatically pulls M&A press releases from Business Wire via Official RSS Feed,
 extracts contact info using Selenium (headless Chrome) to bypass blocks,
 generates enhanced reports, and commits to GitHub.
 
-Runs twice daily at 8 AM and 1 PM Eastern Time
-Only adds NEW acquisitions to avoid duplicates
+Runs hourly via GitHub Actions.
 """
 
 import os
@@ -18,6 +18,7 @@ from datetime import datetime
 import subprocess
 import re
 import time
+import random
 import xml.etree.ElementTree as ET
 
 # Auto-install dependencies if missing
@@ -36,11 +37,8 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 # Configuration
-# Official Business Wire RSS Feed for Mergers & Acquisitions
 RSS_URL = "https://feed.businesswire.com/rss/home/?rss=G1QFDERJXkJeEFtRWA=="
 GITHUB_REPO_PATH = "/home/ubuntu/acquisitions"
-MAKE_WEBHOOK_URL = "https://hook.us2.make.com/e5racqynovtehtqosma6geutfi6ksy26"
-
 USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 
 def log(message):
@@ -52,29 +50,66 @@ def get_today_date():
     """Get today's date in YYYY-MM-DD format"""
     return datetime.now().strftime("%Y-%m-%d")
 
-def get_existing_urls_from_report(report_path):
+def normalize_url(url):
+    """Normalize URL for comparison (remove protocol, query params)"""
+    if not url:
+        return ""
+    # Remove protocol
+    url = re.sub(r'^https?://', '', url)
+    # Remove query params
+    url = url.split('?')[0]
+    # Remove trailing slash
+    if url.endswith('/'):
+        url = url[:-1]
+    return url.lower()
+
+def get_existing_entries_from_report(report_path):
     """
-    Extract URLs of acquisitions already in the report
-    Returns set of URLs
+    Extract existing entries from the report to preserve them
+    Returns list of dicts
     """
     if not os.path.exists(report_path):
-        return set()
+        return []
     
     try:
         with open(report_path, 'r', encoding='utf-8') as f:
             content = f.read()
         
-        urls = set(re.findall(r'https://www\.businesswire\.com/news/home/\d+/[^\s\)]+', content))
-        # Also check for Google News redirect URLs just in case
-        google_urls = set(re.findall(r'https://news\.google\.com/rss/articles/[^\s\)]+', content))
-        urls.update(google_urls)
+        entries = []
+        sections = content.split('\n---\n')
         
-        log(f"Found {len(urls)} existing acquisitions in report")
-        return urls
+        for section in sections:
+            if not section.strip():
+                continue
+                
+            url_match = re.search(r'\*\*Link:\*\* \[.*?\]\((.*?)\)', section)
+            title_match = re.search(r'## (.*?)\n', section)
+            summary_match = re.search(r'\*\*Summary:\*\* (.*?)\n', section, re.DOTALL)
+            
+            if url_match and title_match:
+                url = url_match.group(1)
+                title = title_match.group(1)
+                summary = summary_match.group(1).strip() if summary_match else ""
+                
+                # Extract contacts block
+                contacts_block = ""
+                if "**Contact Information:**" in section:
+                    contacts_block = section.split("**Contact Information:**")[1].strip()
+                
+                entries.append({
+                    'title': title,
+                    'url': url,
+                    'summary': summary,
+                    'contacts_block': contacts_block,
+                    'raw_section': section
+                })
+                
+        log(f"Found {len(entries)} existing entries in report")
+        return entries
     
     except Exception as e:
         log(f"Error reading existing report: {e}")
-        return set()
+        return []
 
 def fetch_from_rss_feed():
     """
@@ -114,8 +149,7 @@ def fetch_from_rss_feed():
                 'title': title,
                 'url': link,
                 'time': pub_date,
-                'summary': description,
-                'original_url': link
+                'summary': description
             })
             
         log(f"Found {len(press_releases)} press releases in RSS feed")
@@ -133,7 +167,6 @@ def setup_driver():
     chrome_options.add_argument("--disable-dev-shm-usage")
     chrome_options.add_argument(f"user-agent={USER_AGENT}")
     
-    # Try to use ChromeDriverManager, fallback to system chromedriver
     try:
         service = Service(ChromeDriverManager().install())
         driver = webdriver.Chrome(service=service, options=chrome_options)
@@ -142,11 +175,12 @@ def setup_driver():
         
     return driver
 
-def extract_contact_info_selenium(driver, url):
+def extract_contact_info(pr_data, driver):
     """
-    Extract contact information using Selenium
+    Extract contact information from a single press release
     """
-    log(f"  Navigating to: {url}")
+    url = pr_data['url']
+    log(f"  Extracting contacts from: {pr_data['title'][:30]}...")
     
     try:
         driver.get(url)
@@ -156,45 +190,16 @@ def extract_contact_info_selenium(driver, url):
             EC.presence_of_element_located((By.TAG_NAME, "body"))
         )
         
-        # Wait for potential Business Wire content
         time.sleep(2)
-        
-        # Get page source
         content = driver.page_source
         
-        # Check for access denied
         if "Access Denied" in content or "Please enable JS" in content:
             log("  Access Denied/Challenge via Selenium")
             return None
             
-        return content
-        
-    except Exception as e:
-        log(f"  Selenium error: {e}")
-        return None
-
-def extract_contact_info(pr_data, driver):
-    """
-    Extract contact information from a single press release
-    """
-    url = pr_data['url']
-    log(f"  Extracting contacts from: {pr_data['title'][:30]}...")
-    
-    content = extract_contact_info_selenium(driver, url)
-    
-    if not content:
-        log(f"  Failed to fetch content for {url}")
-        return {
-            'title': pr_data['title'],
-            'url': url,
-            'summary': pr_data['summary'],
-            'contacts': [],
-            'success': True
-        }
-    
-    try:
         soup = BeautifulSoup(content, 'html.parser')
         
+        # Update summary if possible
         summary = pr_data['summary']
         article_body = soup.find('div', class_=re.compile(r'bw-release-body|release-body|bw-release-main'))
         if not article_body:
@@ -211,7 +216,6 @@ def extract_contact_info(pr_data, driver):
                 summary = ' '.join(summary_parts)[:800]
         
         contacts = []
-        full_text = soup.get_text()
         
         # Strategy 1: Look for structured contact divs (bw-release-contact)
         contact_sections = soup.find_all('div', id=lambda x: x and x.startswith('bw-release-contact'))
@@ -220,12 +224,9 @@ def extract_contact_info(pr_data, driver):
             
         if contact_sections:
             for section in contact_sections:
-                # Get text with separator to preserve structure
                 contact_text = section.get_text(separator='\n', strip=True)
                 lines = [line.strip() for line in contact_text.split('\n') if line.strip()]
                 
-                # Check if this block contains multiple contacts separated by "For [Company]:" or similar
-                # This handles the Jade Global case: "For Jade: ... For D4M: ..."
                 current_contact = {}
                 
                 for i, line in enumerate(lines):
@@ -235,7 +236,6 @@ def extract_contact_info(pr_data, driver):
                     if email_match:
                         email = email_match.group()
                         
-                        # If we already have a contact with an email, save it and start a new one
                         if 'email' in current_contact:
                             contacts.append(current_contact)
                             current_contact = {}
@@ -243,17 +243,13 @@ def extract_contact_info(pr_data, driver):
                         current_contact['email'] = email
                         
                         # Look backwards for name/title
-                        # Usually: Name, Title, Email OR Name, Email
                         if i > 0:
                             prev_line = lines[i-1]
                             
-                            # Skip generic labels like "Email:", "Contact:", "Media Contact:"
-                            # Also skip if it ends with ":"
+                            # Skip generic labels
                             if re.search(r'^(Email|Contact|Media Contact|Press Contact):?$', prev_line, re.IGNORECASE) or prev_line.endswith(':'):
-                                # If prev_line is a label, look back one more line
                                 if i > 1:
                                     prev_line = lines[i-2]
-                                    # Update index for further lookbacks
                                     name_idx = i-2
                                 else:
                                     prev_line = ""
@@ -267,35 +263,30 @@ def extract_contact_info(pr_data, driver):
                                 is_title = any(t in prev_line for t in ["Head", "VP", "Director", "Manager", "Officer", "Chief", "President", "Lead", "Partner"])
                                 
                                 if is_title and name_idx > 0:
-                                    # If prev_line is a title, then the line before that is likely the name
                                     prev_prev = lines[name_idx-1]
                                     if not re.search(r'@|http|www|Contact:', prev_prev) and len(prev_prev) < 100:
                                         if not prev_prev.startswith("For "):
                                             current_contact['name'] = prev_prev
                                             current_contact['title'] = prev_line
                                         else:
-                                            # If starts with "For ", it's a company header, so prev_line is the name
                                             current_contact['name'] = prev_line
                                             current_contact['company'] = prev_prev
                                 else:
-                                    # Default: prev_line is the name
                                     current_contact['name'] = prev_line
-                                    
-                                    # Look back one more line for Company
                                     if name_idx > 0:
                                         prev_prev = lines[name_idx-1]
                                         if not re.search(r'@|http|www|Contact:', prev_prev) and len(prev_prev) < 100:
                                             if prev_prev.startswith("For "):
                                                 current_contact['company'] = prev_prev
                         
-                        # Handle "Name for Company" pattern in extracted name
+                        # Handle "Name for Company" pattern
                         if 'name' in current_contact and ' for ' in current_contact['name']:
                             parts = current_contact['name'].split(' for ')
                             if len(parts) == 2:
                                 current_contact['name'] = parts[0]
                                 current_contact['company'] = parts[1]
 
-                        # Look for phone in same line or next
+                        # Look for phone
                         phone_match = re.search(r'\+?1?[-.]?\(?\d{3}\)?[-.]?\d{3}[-.]?\d{4}', line)
                         if phone_match:
                             current_contact['phone'] = phone_match.group()
@@ -305,14 +296,11 @@ def extract_contact_info(pr_data, driver):
                             if phone_match:
                                 current_contact['phone'] = phone_match.group()
                                 
-                        # Save the full raw block for this contact to ensure we capture everything
-                        # We'll construct a nice block for the markdown
+                        # Save raw block
                         raw_lines = []
-                        start_idx = max(0, i-3) # Look back further
+                        start_idx = max(0, i-3)
                         end_idx = min(len(lines), i+2)
                         for k in range(start_idx, end_idx):
-                            # Skip label lines in raw block if possible, or keep them? 
-                            # Better to keep them for context, but maybe clean up "Email:"
                             raw_lines.append(lines[k])
                         current_contact['raw_block'] = '\n'.join(raw_lines)
                         
@@ -328,18 +316,6 @@ def extract_contact_info(pr_data, driver):
                 unique_contacts.append(c)
                 seen_emails.add(email)
         contacts = unique_contacts
-
-        # Strategy 2: Fallback to regex on full text if no structured contacts found
-        if not contacts:
-            emails = re.findall(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b', full_text)
-            if emails:
-                valid_emails = [e for e in emails if not any(x in e.lower() for x in ['info@', 'press@', 'news@', 'contact@'])]
-                if not valid_emails and emails:
-                    valid_emails = emails
-                contacts = [{'email': email} for email in valid_emails[:3]]
-            
-        if not contacts:
-            log(f"  No contacts found. Content length: {len(full_text)}")
         
         return {
             'title': pr_data['title'],
@@ -350,77 +326,35 @@ def extract_contact_info(pr_data, driver):
         }
         
     except Exception as e:
-        log(f"  Error parsing content: {e}")
-        return {
-            'title': pr_data['title'],
-            'url': url,
-            'summary': pr_data['summary'],
-            'contacts': [],
-            'success': True
-        }
-
-def is_private_company_acquisition(title, summary):
-    """
-    Determine if this is a private company acquisition
-    """
-    public_indicators = [
-        'NYSE:', 'NASDAQ:', 'OTCQX:', 'TSX:', 'LSE:',
-        'publicly traded', 'public company',
-        'Euronext', 'ASX:'
-    ]
-    
-    non_acquisition_indicators = [
-        'opposition to', 'opposes', 'against', 'lawsuit', 'investigation', 'class action'
-    ]
-    
-    combined_text = f"{title} {summary}".lower()
-    
-    for indicator in public_indicators:
-        if indicator.lower() in combined_text:
-            return False
-    
-    for indicator in non_acquisition_indicators:
-        if indicator.lower() in combined_text:
-            return False
-    
-    acquisition_keywords = ['acquires', 'acquisition', 'joins', 'partnership', 'acquired', 'launches', 'merger', 'invests', 'investment']
-    has_acquisition = any(keyword in combined_text for keyword in acquisition_keywords)
-    
-    return has_acquisition
+        log(f"  Error extracting contacts: {e}")
+        return None
 
 def generate_markdown_report(acquisitions, date_str):
-    """
-    Generate markdown report from acquisitions list
-    """
+    """Generate Markdown report content"""
     report = f"# M&A Acquisitions Report - {date_str}\n\n"
     report += f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
     report += f"Total Acquisitions: {len(acquisitions)}\n\n"
     
     for acq in acquisitions:
-        # Use old format: ## Title
         report += f"## {acq['title']}\n\n"
-        
-        # Add Date and URL fields expected by parser
         report += f"**Date:** {date_str}\n"
         report += f"**Link:** [{acq['title']}]({acq['url']})\n\n"
-        
         report += f"**Summary:** {acq['summary']}\n\n"
         
-        # Use old contact header and format
-        if acq['contacts']:
-            report += "**Contact Information:**\n"
+        report += "**Contact Information:**\n"
+        
+        if 'contacts_block' in acq and acq['contacts_block']:
+            # Use existing block if available (from existing entries)
+            report += f"{acq['contacts_block']}\n"
+        elif 'contacts' in acq and acq['contacts']:
             for contact in acq['contacts']:
-                # Prefer raw block if available as it preserves context
                 if 'raw_block' in contact:
-                    # Clean up raw block to avoid markdown issues
                     clean_block = contact['raw_block'].replace('**', '').replace('##', '')
                     report += f"{clean_block}\n\n"
                 else:
-                    # Fallback for legacy format
                     name = contact.get('name', 'Media Contact')
                     email = contact.get('email', '')
                     phone = contact.get('phone', '')
-                    
                     report += f"{name}\n"
                     if email:
                         report += f"{email}\n"
@@ -428,86 +362,96 @@ def generate_markdown_report(acquisitions, date_str):
                         report += f"Tel: {phone}\n"
                     report += "\n"
         else:
-            report += "**Contact Information:**\nNone found\n"
+            report += "None found\n"
             
         report += "\n---\n\n"
         
     return report
 
 def main():
-    log("Starting M&A Press Release Monitor (Official RSS Feed Version)")
+    log("Starting M&A Press Release Monitor (Robust Version)")
     
-    today_date = get_today_date()
-    report_filename = f"{today_date}.md"
+    today = get_today_date()
+    report_filename = f"{today}.md"
     report_path = os.path.join(GITHUB_REPO_PATH, report_filename)
     
-    # Ensure repo directory exists
-    if not os.path.exists(GITHUB_REPO_PATH):
-        os.makedirs(GITHUB_REPO_PATH)
+    # 1. Load existing entries
+    existing_entries = get_existing_entries_from_report(report_path)
+    existing_urls = set(normalize_url(e['url']) for e in existing_entries)
+    
+    # 2. Fetch new releases
+    rss_releases = fetch_from_rss_feed()
+    
+    # 3. Filter for new and relevant releases
+    new_releases = []
+    for release in rss_releases:
+        # Filter logic
+        title_lower = release['title'].lower()
+        summary_lower = release['summary'].lower()
         
-    # Get existing URLs to avoid duplicates
-    existing_urls = get_existing_urls_from_report(report_path)
+        is_relevant = (
+            ('acqui' in title_lower or 'merger' in title_lower or 'invest' in title_lower or 'sale' in title_lower) and
+            ('dividend' not in title_lower and 'earnings' not in title_lower)
+        )
+        
+        if not is_relevant:
+            log(f"Skipping non-relevant: {release['title'][:30]}...")
+            continue
+            
+        norm_url = normalize_url(release['url'])
+        if norm_url in existing_urls:
+            log(f"Skipping existing: {release['title'][:30]}...")
+            continue
+            
+        new_releases.append(release)
+        
+    log(f"Found {len(new_releases)} NEW relevant releases to process")
     
-    # Fetch from RSS
-    all_releases = fetch_from_rss_feed()
-    
-    if not all_releases:
-        log("No releases found. Exiting.")
+    if not new_releases:
+        log("No new releases to process. Exiting.")
         return
-    
-    # Filter for new and relevant acquisitions
-    new_acquisitions = []
-    driver = None
+
+    # 4. Process new releases
+    driver = setup_driver()
+    processed_new_entries = []
     
     try:
-        driver = setup_driver()
-        
-        for release in all_releases:
-            # Check if already processed
-            if release['url'] in existing_urls:
-                log(f"Skipping existing: {release['title'][:30]}...")
-                continue
-                
-            # Check if relevant (private equity/acquisition)
-            if is_private_company_acquisition(release['title'], release['summary']):
-                # Extract details
-                details = extract_contact_info(release, driver)
-                new_acquisitions.append(details)
-                
-                # Be nice to the server
-                time.sleep(2)
+        for i, release in enumerate(new_releases):
+            # Add random delay to avoid blocking
+            delay = random.uniform(10, 25)
+            log(f"Waiting {delay:.1f}s before processing...")
+            time.sleep(delay)
+            
+            result = extract_contact_info(release, driver)
+            
+            if result:
+                processed_new_entries.append(result)
             else:
-                log(f"Skipping non-relevant: {release['title'][:30]}...")
+                # If failed (e.g. blocked), save as is with empty contacts
+                # so we don't lose the entry and don't retry it forever
+                log(f"Failed to extract contacts for {release['title']}, saving basic info")
+                processed_new_entries.append({
+                    'title': release['title'],
+                    'url': release['url'],
+                    'summary': release['summary'],
+                    'contacts': [],
+                    'success': False
+                })
                 
-    except Exception as e:
-        log(f"Error during processing: {e}")
     finally:
-        if driver:
-            driver.quit()
-            
-    if not new_acquisitions:
-        log("No new relevant acquisitions found.")
-        return
+        driver.quit()
         
-    log(f"Found {len(new_acquisitions)} new acquisitions. Updating report...")
+    # 5. Combine and Save
+    # Combine existing + new
+    all_entries = existing_entries + processed_new_entries
     
-    # Generate report content
-    new_content = generate_markdown_report(new_acquisitions, today_date)
+    # Generate report
+    report_content = generate_markdown_report(all_entries, today)
     
-    # Append or create report
-    if os.path.exists(report_path):
-        with open(report_path, 'a', encoding='utf-8') as f:
-            # Skip header for append
-            lines = new_content.split('\n')
-            f.write('\n'.join(lines[4:]))
-    else:
-        with open(report_path, 'w', encoding='utf-8') as f:
-            f.write(new_content)
-            
-    log(f"Report updated: {report_path}")
-    
-    # Git operations would go here (handled by GitHub Actions usually, but can be added if running locally)
-    # For now, we just save the file locally
+    with open(report_path, 'w', encoding='utf-8') as f:
+        f.write(report_content)
+        
+    log(f"Successfully updated report with {len(processed_new_entries)} new entries. Total: {len(all_entries)}")
 
 if __name__ == "__main__":
     main()
