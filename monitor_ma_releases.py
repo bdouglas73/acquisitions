@@ -300,18 +300,32 @@ def generate_markdown_report(acquisitions, date_str):
     report += f"Total Acquisitions: {len(acquisitions)}\n\n"
     
     for acq in acquisitions:
-        report += f"## [{acq['title']}]({acq['url']})\n\n"
+        # Use old format: ## Title
+        report += f"## {acq['title']}\n\n"
+        
+        # Add Date and URL fields expected by parser
+        report += f"**Date:** {date_str}\n"
+        report += f"**Link:** [{acq['title']}]({acq['url']})\n\n"
+        
         report += f"**Summary:** {acq['summary']}\n\n"
         
+        # Use old contact header and format
         if acq['contacts']:
-            report += "**Contacts:**\n"
+            report += "**Contact Information:**\n"
             for contact in acq['contacts']:
                 name = contact.get('name', 'Media Contact')
-                email = contact.get('email', 'N/A')
+                email = contact.get('email', '')
                 phone = contact.get('phone', '')
-                report += f"- {name}: {email} {phone}\n"
+                
+                # Format as block
+                report += f"{name}\n"
+                if email:
+                    report += f"{email}\n"
+                if phone:
+                    report += f"Tel: {phone}\n"
+                report += "\n"
         else:
-            report += "**Contacts:** None found\n"
+            report += "**Contact Information:**\nNone found\n"
             
         report += "\n---\n\n"
         
