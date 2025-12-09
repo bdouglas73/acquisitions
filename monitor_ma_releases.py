@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 M&A Press Release Monitoring Script with Smart Deduplication
-Automatically pulls M&A press releases from Business Wire via Google News RSS,
+Automatically pulls M&A press releases from Business Wire via Official RSS Feed,
 extracts contact info using Selenium (headless Chrome) to bypass blocks,
 generates enhanced reports, and commits to GitHub.
 
@@ -36,7 +36,8 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 # Configuration
-RSS_URL = "https://news.google.com/rss/search?q=site:businesswire.com+acquisition+when:1d&hl=en-US&gl=US&ceid=US:en"
+# Official Business Wire RSS Feed for Mergers & Acquisitions
+RSS_URL = "https://feed.businesswire.com/rss/home/?rss=G1QFDERJXkJeEFtRWA=="
 GITHUB_REPO_PATH = "/home/ubuntu/acquisitions"
 MAKE_WEBHOOK_URL = "https://hook.us2.make.com/e5racqynovtehtqosma6geutfi6ksy26"
 
@@ -64,6 +65,7 @@ def get_existing_urls_from_report(report_path):
             content = f.read()
         
         urls = set(re.findall(r'https://www\.businesswire\.com/news/home/\d+/[^\s\)]+', content))
+        # Also check for Google News redirect URLs just in case
         google_urls = set(re.findall(r'https://news\.google\.com/rss/articles/[^\s\)]+', content))
         urls.update(google_urls)
         
@@ -74,17 +76,21 @@ def get_existing_urls_from_report(report_path):
         log(f"Error reading existing report: {e}")
         return set()
 
-def fetch_from_google_news_rss():
+def fetch_from_rss_feed():
     """
-    Fetch press releases from Google News RSS feed
+    Fetch press releases from Business Wire Official RSS feed
     Returns list of dicts with title, url, time, summary
     """
-    log(f"Fetching press releases from Google News RSS: {RSS_URL}")
+    log(f"Fetching press releases from Business Wire RSS: {RSS_URL}")
     
     try:
-        response = requests.get(RSS_URL, timeout=15)
+        headers = {
+            'User-Agent': USER_AGENT
+        }
+        response = requests.get(RSS_URL, headers=headers, timeout=15)
         response.raise_for_status()
         
+        # Parse XML
         root = ET.fromstring(response.content)
         items = root.findall('.//item')
         
@@ -96,8 +102,13 @@ def fetch_from_google_news_rss():
             pub_date = item.find('pubDate').text
             description = item.find('description').text if item.find('description') is not None else ""
             
+            # Clean up title if needed
             if " - Business Wire" in title:
                 title = title.replace(" - Business Wire", "")
+            
+            # Clean up link (remove tracking params if present)
+            if "?feedref=" in link:
+                link = link.split("?feedref=")[0]
             
             press_releases.append({
                 'title': title,
@@ -145,22 +156,6 @@ def extract_contact_info_selenium(driver, url):
             EC.presence_of_element_located((By.TAG_NAME, "body"))
         )
         
-        # Check if we are on a Google News redirect page
-        if "news.google.com" in driver.current_url:
-            log("  On Google News redirect page, waiting...")
-            time.sleep(5)
-            # Check if there's a link to click (sometimes auto-redirect fails)
-            try:
-                links = driver.find_elements(By.TAG_NAME, "a")
-                for link in links:
-                    if "businesswire.com" in link.get_attribute("href"):
-                        log("  Found direct link, clicking...")
-                        link.click()
-                        time.sleep(3)
-                        break
-            except:
-                pass
-        
         # Wait for potential Business Wire content
         time.sleep(2)
         
@@ -170,8 +165,6 @@ def extract_contact_info_selenium(driver, url):
         # Check for access denied
         if "Access Denied" in content or "Please enable JS" in content:
             log("  Access Denied/Challenge via Selenium")
-            # Try to take a screenshot if possible (saved to local runner)
-            # driver.save_screenshot("access_denied.png")
             return None
             
         return content
@@ -250,7 +243,6 @@ def extract_contact_info(pr_data, driver):
             
         if not contacts:
             log(f"  No contacts found. Content length: {len(full_text)}")
-            log(f"  Snippet: {full_text[:200].replace(chr(10), ' ')}")
         
         return {
             'title': pr_data['title'],
@@ -299,147 +291,106 @@ def is_private_company_acquisition(title, summary):
     
     return has_acquisition
 
-def generate_enhanced_report(press_releases, report_date, is_update=False, existing_count=0):
+def generate_markdown_report(acquisitions, date_str):
     """
-    Generate enhanced markdown report with all press releases
+    Generate markdown report from acquisitions list
     """
-    log("Generating enhanced report...")
+    report = f"# M&A Acquisitions Report - {date_str}\n\n"
+    report += f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
+    report += f"Total Acquisitions: {len(acquisitions)}\n\n"
     
-    report_lines = []
-    report_lines.append(f"# Enhanced M&A Report - {report_date}\n")
-    report_lines.append(f"**Report Generated:** {datetime.now().strftime('%B %d, %Y at %I:%M %p ET')}\n")
-    report_lines.append("**Source:** Business Wire M&A Press Releases (via Google News)\n")
-    report_lines.append("**Filter:** Private Company Acquisitions Only\n")
-    report_lines.append("\n---\n")
-    
-    private_acquisitions = [
-        pr for pr in press_releases 
-        if pr['success'] and is_private_company_acquisition(pr['title'], pr['summary'])
-    ]
-    
-    total_count = existing_count + len(private_acquisitions)
-    
-    report_lines.append(f"\n## Summary\n")
-    report_lines.append(f"\nThis report contains **{total_count} private company acquisitions** ")
-    report_lines.append("announced on " + report_date + ", with complete press release summaries, URLs, and contact information for media inquiries.\n")
-    
-    if is_update and len(private_acquisitions) > 0:
-        report_lines.append(f"\n**New acquisitions added:** {len(private_acquisitions)}\n")
-    
-    report_lines.append("\n---\n")
-    
-    start_number = existing_count + 1
-    for i, pr in enumerate(private_acquisitions, start_number):
-        report_lines.append(f"\n## {i}. {pr['title']}\n")
-        report_lines.append(f"\n**Press Release URL:** {pr['url']}\n")
+    for acq in acquisitions:
+        report += f"## [{acq['title']}]({acq['url']})\n\n"
+        report += f"**Summary:** {acq['summary']}\n\n"
         
-        if pr['summary']:
-            report_lines.append(f"\n### Summary\n")
-            clean_summary = re.sub(r'<[^>]+>', '', pr['summary'])
-            report_lines.append(f"\n{clean_summary}\n")
-        
-        if pr['contacts']:
-            report_lines.append(f"\n### Contact Information\n")
-            for j, contact in enumerate(pr['contacts'], 1):
-                if len(pr['contacts']) > 1:
-                    report_lines.append(f"\n**Contact {j}:**\n")
-                else:
-                    report_lines.append(f"\n")
-                
-                if 'name' in contact:
-                    report_lines.append(f"- Name: {contact['name']}\n")
-                if 'title' in contact:
-                    report_lines.append(f"- Title: {contact['title']}\n")
-                if 'company' in contact:
-                    report_lines.append(f"- Company: {contact['company']}\n")
-                if 'email' in contact:
-                    report_lines.append(f"- Email: {contact['email']}\n")
-                if 'phone' in contact:
-                    report_lines.append(f"- Phone: {contact['phone']}\n")
+        if acq['contacts']:
+            report += "**Contacts:**\n"
+            for contact in acq['contacts']:
+                name = contact.get('name', 'Media Contact')
+                email = contact.get('email', 'N/A')
+                phone = contact.get('phone', '')
+                report += f"- {name}: {email} {phone}\n"
         else:
-            report_lines.append(f"\n### Contact Information\n")
-            report_lines.append("No specific contact information found in press release.\n")
+            report += "**Contacts:** None found\n"
             
-        report_lines.append("\n---\n")
+        report += "\n---\n\n"
         
-    return "\n".join(report_lines)
+    return report
 
 def main():
-    log("Starting M&A Press Release Monitor (Selenium Edition)...")
+    log("Starting M&A Press Release Monitor (Official RSS Feed Version)")
     
-    today = get_today_date()
-    report_filename = f"{today}.md"
+    today_date = get_today_date()
+    report_filename = f"{today_date}.md"
     report_path = os.path.join(GITHUB_REPO_PATH, report_filename)
     
+    # Ensure repo directory exists
+    if not os.path.exists(GITHUB_REPO_PATH):
+        os.makedirs(GITHUB_REPO_PATH)
+        
+    # Get existing URLs to avoid duplicates
     existing_urls = get_existing_urls_from_report(report_path)
-    all_press_releases = fetch_from_google_news_rss()
     
-    if not all_press_releases:
-        log("No press releases found. Exiting.")
+    # Fetch from RSS
+    all_releases = fetch_from_rss_feed()
+    
+    if not all_releases:
+        log("No releases found. Exiting.")
         return
     
-    new_press_releases = []
-    for pr in all_press_releases:
-        is_duplicate = False
-        if pr['url'] in existing_urls:
-            is_duplicate = True
-        if os.path.exists(report_path):
-            with open(report_path, 'r') as f:
-                if pr['title'] in f.read():
-                    is_duplicate = True
-        if not is_duplicate:
-            new_press_releases.append(pr)
-    
-    log(f"Found {len(new_press_releases)} NEW press releases")
-    
-    if not new_press_releases:
-        log("No new press releases to process. Exiting.")
-        return
-    
-    # Setup Selenium Driver
-    driver = setup_driver()
+    # Filter for new and relevant acquisitions
+    new_acquisitions = []
+    driver = None
     
     try:
-        processed_releases = []
-        for pr in new_press_releases:
-            details = extract_contact_info(pr, driver)
-            processed_releases.append(details)
-            time.sleep(2)
+        driver = setup_driver()
+        
+        for release in all_releases:
+            # Check if already processed
+            if release['url'] in existing_urls:
+                log(f"Skipping existing: {release['title'][:30]}...")
+                continue
+                
+            # Check if relevant (private equity/acquisition)
+            if is_private_company_acquisition(release['title'], release['summary']):
+                # Extract details
+                details = extract_contact_info(release, driver)
+                new_acquisitions.append(details)
+                
+                # Be nice to the server
+                time.sleep(2)
+            else:
+                log(f"Skipping non-relevant: {release['title'][:30]}...")
+                
+    except Exception as e:
+        log(f"Error during processing: {e}")
     finally:
-        driver.quit()
+        if driver:
+            driver.quit()
+            
+    if not new_acquisitions:
+        log("No new relevant acquisitions found.")
+        return
+        
+    log(f"Found {len(new_acquisitions)} new acquisitions. Updating report...")
     
-    is_update = os.path.exists(report_path)
-    existing_count = len(existing_urls)
+    # Generate report content
+    new_content = generate_markdown_report(new_acquisitions, today_date)
     
-    report_content = generate_enhanced_report(processed_releases, today, is_update, existing_count)
-    
-    if is_update:
+    # Append or create report
+    if os.path.exists(report_path):
         with open(report_path, 'a', encoding='utf-8') as f:
-            parts = report_content.split("## Summary")
-            if len(parts) > 1:
-                item_start = re.search(r'\n## \d+\.', report_content)
-                if item_start:
-                    new_items = report_content[item_start.start():]
-                    f.write(new_items)
-                    log("Appended new items to existing report")
+            # Skip header for append
+            lines = new_content.split('\n')
+            f.write('\n'.join(lines[4:]))
     else:
         with open(report_path, 'w', encoding='utf-8') as f:
-            f.write(report_content)
-        log("Created new report")
-
-    try:
-        os.chdir(GITHUB_REPO_PATH)
-        subprocess.run(["git", "config", "user.name", "GitHub Action"], check=True)
-        subprocess.run(["git", "config", "user.email", "action@github.com"], check=True)
-        subprocess.run(["git", "add", report_filename], check=True)
-        
-        commit_message = f"Add {len(processed_releases)} M&A reports for {today}"
-        subprocess.run(["git", "commit", "-m", commit_message], check=True)
-        subprocess.run(["git", "push"], check=True)
-        log("Successfully pushed to GitHub")
+            f.write(new_content)
             
-    except Exception as e:
-        log(f"Error during git operations: {e}")
+    log(f"Report updated: {report_path}")
+    
+    # Git operations would go here (handled by GitHub Actions usually, but can be added if running locally)
+    # For now, we just save the file locally
 
 if __name__ == "__main__":
     main()
