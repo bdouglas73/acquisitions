@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """
-M&A Press Release Monitoring Script
+M&A Press Release Monitoring Script with Smart Deduplication
 Automatically pulls M&A press releases from Business Wire, extracts contact info,
 generates enhanced reports, and commits to GitHub.
 
 Runs twice daily at 8 AM and 1 PM Eastern Time
+Only adds NEW acquisitions to avoid duplicates
 """
 
 import os
@@ -20,7 +21,7 @@ import time
 # Configuration
 BUSINESS_WIRE_URL = "https://www.businesswire.com/newsroom?language=en&subject=1000011&region=1000490&filter=1958561"
 GITHUB_REPO_PATH = "/home/ubuntu/acquisitions"
-MAKE_WEBHOOK_URL = "https://hook.us2.make.com/e5racqynovtehtqosma6geutfi6ksy26"  # Update this URL
+MAKE_WEBHOOK_URL = "https://hook.us2.make.com/e5racqynovtehtqosma6geutfi6ksy26"
 
 USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 
@@ -32,6 +33,27 @@ def log(message):
 def get_today_date():
     """Get today's date in YYYY-MM-DD format"""
     return datetime.now().strftime("%Y-%m-%d")
+
+def get_existing_urls_from_report(report_path):
+    """
+    Extract URLs of acquisitions already in the report
+    Returns set of URLs
+    """
+    if not os.path.exists(report_path):
+        return set()
+    
+    try:
+        with open(report_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        
+        # Extract all press release URLs from the report
+        urls = set(re.findall(r'https://www\.businesswire\.com/news/home/\d+/[^\s\)]+', content))
+        log(f"Found {len(urls)} existing acquisitions in report")
+        return urls
+    
+    except Exception as e:
+        log(f"Error reading existing report: {e}")
+        return set()
 
 def extract_press_releases_from_page():
     """
@@ -52,7 +74,6 @@ def extract_press_releases_from_page():
         today = get_today_date()
         
         # Parse the page content - look for press release blocks
-        # This is a simplified version - you may need to adjust selectors
         articles = soup.find_all(['article', 'div'], class_=re.compile(r'bwNewsFeedItem|feed-item|news-item'))
         
         if not articles:
@@ -74,7 +95,7 @@ def extract_press_releases_from_page():
                             'summary': ''
                         })
         
-        log(f"Found {len(press_releases)} press releases")
+        log(f"Found {len(press_releases)} press releases on page")
         return press_releases
         
     except Exception as e:
@@ -115,8 +136,6 @@ def extract_contact_info(pr_url):
         
         # Extract contact information
         contacts = []
-        
-        # Look for contact section
         full_text = soup.get_text()
         
         # Find emails
@@ -155,9 +174,9 @@ def extract_contact_info(pr_url):
                     
                     contacts.append(contact)
         
-        # If no structured contacts found, just return emails and phones
+        # If no structured contacts found, just return emails
         if not contacts and emails:
-            contacts = [{'email': email} for email in emails[:3]]  # Limit to first 3
+            contacts = [{'email': email} for email in emails[:3]]
         
         return {
             'title': title,
@@ -182,17 +201,14 @@ def is_private_company_acquisition(title, summary):
     Determine if this is a private company acquisition
     Exclude public companies and non-acquisition announcements
     """
-    # Keywords that indicate public companies
     public_indicators = [
         'NYSE:', 'NASDAQ:', 'OTCQX:', 'TSX:', 'LSE:',
         'publicly traded', 'public company',
         'Euronext', 'ASX:'
     ]
     
-    # Keywords that indicate non-acquisitions
     non_acquisition_indicators = [
-        'opposition to', 'opposes', 'against',
-        'announces closing', 'completes acquisition' # These might be follow-ups
+        'opposition to', 'opposes', 'against'
     ]
     
     combined_text = f"{title} {summary}".lower()
@@ -208,12 +224,12 @@ def is_private_company_acquisition(title, summary):
             return False
     
     # Must contain acquisition keywords
-    acquisition_keywords = ['acquires', 'acquisition', 'joins', 'partnership', 'acquired']
+    acquisition_keywords = ['acquires', 'acquisition', 'joins', 'partnership', 'acquired', 'launches']
     has_acquisition = any(keyword in combined_text for keyword in acquisition_keywords)
     
     return has_acquisition
 
-def generate_enhanced_report(press_releases, report_date):
+def generate_enhanced_report(press_releases, report_date, is_update=False, existing_count=0):
     """
     Generate enhanced markdown report with all press releases
     """
@@ -232,13 +248,20 @@ def generate_enhanced_report(press_releases, report_date):
         if pr['success'] and is_private_company_acquisition(pr['title'], pr['summary'])
     ]
     
+    total_count = existing_count + len(private_acquisitions)
+    
     report_lines.append(f"\n## Summary\n")
-    report_lines.append(f"\nThis report contains **{len(private_acquisitions)} private company acquisitions** ")
+    report_lines.append(f"\nThis report contains **{total_count} private company acquisitions** ")
     report_lines.append("announced on " + report_date + ", with complete press release summaries, URLs, and contact information for media inquiries.\n")
+    
+    if is_update and len(private_acquisitions) > 0:
+        report_lines.append(f"\n**New acquisitions added:** {len(private_acquisitions)}\n")
+    
     report_lines.append("\n---\n")
     
     # Add each acquisition
-    for i, pr in enumerate(private_acquisitions, 1):
+    start_number = existing_count + 1
+    for i, pr in enumerate(private_acquisitions, start_number):
         report_lines.append(f"\n## {i}. {pr['title']}\n")
         report_lines.append(f"\n**Press Release URL:** {pr['url']}\n")
         
@@ -271,7 +294,7 @@ def generate_enhanced_report(press_releases, report_date):
     
     return ''.join(report_lines)
 
-def commit_and_push_to_github(report_file, report_date):
+def commit_and_push_to_github(report_file, report_date, is_update=False):
     """
     Commit the report to GitHub
     """
@@ -284,7 +307,11 @@ def commit_and_push_to_github(report_file, report_date):
         subprocess.run(['git', 'add', report_file], check=True)
         
         # Commit
-        commit_message = f"Add enhanced M&A report for {report_date}"
+        if is_update:
+            commit_message = f"Update enhanced M&A report for {report_date} with new acquisitions"
+        else:
+            commit_message = f"Add enhanced M&A report for {report_date}"
+        
         subprocess.run(['git', 'commit', '-m', commit_message], check=True)
         
         # Push
@@ -297,31 +324,6 @@ def commit_and_push_to_github(report_file, report_date):
         log(f"Git error: {e}")
         return False
 
-def trigger_make_webhook(report_data):
-    """
-    Trigger Make.com webhook with report data
-    """
-    log("Triggering Make.com webhook...")
-    
-    try:
-        response = requests.post(
-            MAKE_WEBHOOK_URL,
-            json=report_data,
-            headers={'Content-Type': 'application/json'},
-            timeout=10
-        )
-        
-        if response.status_code == 200:
-            log("Webhook triggered successfully")
-            return True
-        else:
-            log(f"Webhook returned status {response.status_code}: {response.text}")
-            return False
-            
-    except Exception as e:
-        log(f"Webhook error: {e}")
-        return False
-
 def main():
     """Main execution function"""
     log("=" * 80)
@@ -331,6 +333,14 @@ def main():
     # Get today's date
     report_date = get_today_date()
     report_file = f"enhanced_ma_report_{report_date}.md"
+    report_path = os.path.join(GITHUB_REPO_PATH, report_file)
+    
+    # Check for existing report and get existing URLs
+    existing_urls = get_existing_urls_from_report(report_path)
+    is_update = len(existing_urls) > 0
+    
+    if is_update:
+        log(f"Report already exists with {len(existing_urls)} acquisitions. Will only add new ones.")
     
     # Step 1: Extract press releases from Business Wire
     press_releases = extract_press_releases_from_page()
@@ -339,36 +349,55 @@ def main():
         log("No press releases found. Exiting.")
         return
     
-    # Step 2: Extract contact info from each press release
+    # Step 2: Filter out already processed URLs
+    new_press_releases = [pr for pr in press_releases if pr['url'] not in existing_urls]
+    
+    if not new_press_releases:
+        log(f"No new acquisitions found. All {len(press_releases)} press releases already in report.")
+        return
+    
+    log(f"Found {len(new_press_releases)} NEW press releases to process")
+    
+    # Step 3: Extract contact info from each NEW press release
     detailed_releases = []
-    for pr in press_releases[:10]:  # Limit to first 10 to avoid overwhelming
+    for pr in new_press_releases[:10]:  # Limit to first 10
         details = extract_contact_info(pr['url'])
         detailed_releases.append(details)
         time.sleep(2)  # Be polite to the server
     
-    # Step 3: Generate enhanced report
-    report_content = generate_enhanced_report(detailed_releases, report_date)
+    # Step 4: Generate or update enhanced report
+    if is_update:
+        # Read existing report and append new acquisitions
+        with open(report_path, 'r', encoding='utf-8') as f:
+            existing_content = f.read()
+        
+        # Remove the "End of Report" line
+        existing_content = existing_content.replace("\n**End of Report**\n", "")
+        
+        # Generate new acquisitions section
+        new_content = generate_enhanced_report(detailed_releases, report_date, is_update=True, existing_count=len(existing_urls))
+        
+        # Extract only the new acquisitions (skip header and summary)
+        new_acquisitions_start = new_content.find("---\n", new_content.find("Summary")) + 4
+        new_acquisitions = new_content[new_acquisitions_start:]
+        
+        # Combine
+        report_content = existing_content + "\n" + new_acquisitions
+    else:
+        # Generate fresh report
+        report_content = generate_enhanced_report(detailed_releases, report_date)
     
     # Save report
-    report_path = os.path.join(GITHUB_REPO_PATH, report_file)
     with open(report_path, 'w', encoding='utf-8') as f:
         f.write(report_content)
     
     log(f"Report saved to {report_path}")
     
-    # Step 4: Commit to GitHub
-    commit_success = commit_and_push_to_github(report_file, report_date)
+    # Step 5: Commit to GitHub
+    commit_success = commit_and_push_to_github(report_file, report_date, is_update)
     
-    # Step 5: Trigger Make.com webhook
     if commit_success:
-        webhook_data = {
-            'report_date': report_date,
-            'report_type': 'enhanced',
-            'total_acquisitions': len([pr for pr in detailed_releases if pr['success']]),
-            'github_url': f"https://github.com/bdouglas73/acquisitions/blob/main/{report_file}",
-            'report_file': report_file
-        }
-        trigger_make_webhook(webhook_data)
+        log(f"Successfully added {len(detailed_releases)} new acquisitions to report")
     
     log("=" * 80)
     log("M&A PRESS RELEASE MONITORING - COMPLETED")
