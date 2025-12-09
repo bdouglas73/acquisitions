@@ -213,33 +213,106 @@ def extract_contact_info(pr_data, driver):
         contacts = []
         full_text = soup.get_text()
         
-        emails = re.findall(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b', full_text)
-        phones = re.findall(r'\+?1?[-.]?\(?\d{3}\)?[-.]?\d{3}[-.]?\d{4}', full_text)
-        
-        contact_section = soup.find('div', class_=re.compile(r'bw-release-contact|contacts'))
-        
-        if contact_section:
-            contact_text = contact_section.get_text(separator='\n', strip=True)
-            lines = [line.strip() for line in contact_text.split('\n') if line.strip()]
+        # Strategy 1: Look for structured contact divs (bw-release-contact)
+        contact_sections = soup.find_all('div', id=lambda x: x and x.startswith('bw-release-contact'))
+        if not contact_sections:
+            contact_sections = soup.find_all('div', class_=re.compile(r'bw-release-contact|contacts'))
             
-            for i, line in enumerate(lines):
-                email_match = re.search(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b', line)
-                if email_match:
-                    contact = {'email': email_match.group()}
-                    if i > 0:
-                        prev_line = lines[i-1]
-                        if not re.search(r'@|http|www', prev_line) and len(prev_line) < 50:
-                            contact['name'] = prev_line
-                    phone_match = re.search(r'\+?1?[-.]?\(?\d{3}\)?[-.]?\d{3}[-.]?\d{4}', line)
-                    if phone_match:
-                        contact['phone'] = phone_match.group()
-                    contacts.append(contact)
-        
-        if not contacts and emails:
-            valid_emails = [e for e in emails if not any(x in e.lower() for x in ['info@', 'press@', 'news@', 'contact@'])]
-            if not valid_emails and emails:
-                valid_emails = emails
-            contacts = [{'email': email} for email in valid_emails[:3]]
+        if contact_sections:
+            for section in contact_sections:
+                # Get text with separator to preserve structure
+                contact_text = section.get_text(separator='\n', strip=True)
+                lines = [line.strip() for line in contact_text.split('\n') if line.strip()]
+                
+                # Check if this block contains multiple contacts separated by "For [Company]:" or similar
+                # This handles the Jade Global case: "For Jade: ... For D4M: ..."
+                current_contact = {}
+                
+                for i, line in enumerate(lines):
+                    # Check for email
+                    email_match = re.search(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b', line)
+                    
+                    if email_match:
+                        email = email_match.group()
+                        
+                        # If we already have a contact with an email, save it and start a new one
+                        if 'email' in current_contact:
+                            contacts.append(current_contact)
+                            current_contact = {}
+                        
+                        current_contact['email'] = email
+                        
+                        # Look backwards for name/title
+                        # Usually: Name, Title, Email OR Name, Email
+                        if i > 0:
+                            prev_line = lines[i-1]
+                            # If previous line is not a generic label or too long
+                            if not re.search(r'@|http|www|Contact:', prev_line) and len(prev_line) < 50:
+                                
+                                # Check if prev_line is likely a title (contains "Head", "VP", "Director", "Manager", "Officer")
+                                is_title = any(t in prev_line for t in ["Head", "VP", "Director", "Manager", "Officer", "Chief", "President"])
+                                
+                                if is_title and i > 1:
+                                    # If prev_line is a title, then the line before that (i-2) is likely the name
+                                    prev_prev = lines[i-2]
+                                    if not re.search(r'@|http|www|Contact:', prev_prev) and len(prev_prev) < 50:
+                                        if not prev_prev.startswith("For "):
+                                            current_contact['name'] = prev_prev
+                                            current_contact['title'] = prev_line
+                                        else:
+                                            # If i-2 starts with "For ", it's a company header, so i-1 is the name (even if it looks like a title)
+                                            current_contact['name'] = prev_line
+                                            current_contact['company'] = prev_prev
+                                else:
+                                    # Default: i-1 is the name
+                                    current_contact['name'] = prev_line
+                                    
+                                    # Look back one more line for Company
+                                    if i > 1:
+                                        prev_prev = lines[i-2]
+                                        if not re.search(r'@|http|www|Contact:', prev_prev) and len(prev_prev) < 50:
+                                            if prev_prev.startswith("For "):
+                                                current_contact['company'] = prev_prev
+                        
+                        # Look for phone in same line or next
+                        phone_match = re.search(r'\+?1?[-.]?\(?\d{3}\)?[-.]?\d{3}[-.]?\d{4}', line)
+                        if phone_match:
+                            current_contact['phone'] = phone_match.group()
+                        elif i + 1 < len(lines):
+                            next_line = lines[i+1]
+                            phone_match = re.search(r'\+?1?[-.]?\(?\d{3}\)?[-.]?\d{3}[-.]?\d{4}', next_line)
+                            if phone_match:
+                                current_contact['phone'] = phone_match.group()
+                                
+                        # Save the full raw block for this contact to ensure we capture everything
+                        # We'll construct a nice block for the markdown
+                        raw_lines = []
+                        start_idx = max(0, i-2)
+                        end_idx = min(len(lines), i+2)
+                        for k in range(start_idx, end_idx):
+                            raw_lines.append(lines[k])
+                        current_contact['raw_block'] = '\n'.join(raw_lines)
+                        
+                        contacts.append(current_contact)
+                        current_contact = {}
+
+        # Deduplicate contacts based on email
+        unique_contacts = []
+        seen_emails = set()
+        for c in contacts:
+            if c['email'] not in seen_emails:
+                unique_contacts.append(c)
+                seen_emails.add(c['email'])
+        contacts = unique_contacts
+
+        # Strategy 2: Fallback to regex on full text if no structured contacts found
+        if not contacts:
+            emails = re.findall(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b', full_text)
+            if emails:
+                valid_emails = [e for e in emails if not any(x in e.lower() for x in ['info@', 'press@', 'news@', 'contact@'])]
+                if not valid_emails and emails:
+                    valid_emails = emails
+                contacts = [{'email': email} for email in valid_emails[:3]]
             
         if not contacts:
             log(f"  No contacts found. Content length: {len(full_text)}")
@@ -313,8 +386,11 @@ def generate_markdown_report(acquisitions, date_str):
         if acq['contacts']:
             report += "**Contact Information:**\n"
             for contact in acq['contacts']:
+                # Prefer raw block if available as it preserves context
                 if 'raw_block' in contact:
-                    report += f"{contact['raw_block']}\n\n"
+                    # Clean up raw block to avoid markdown issues
+                    clean_block = contact['raw_block'].replace('**', '').replace('##', '')
+                    report += f"{clean_block}\n\n"
                 else:
                     # Fallback for legacy format
                     name = contact.get('name', 'Media Contact')
