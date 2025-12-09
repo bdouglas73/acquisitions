@@ -246,34 +246,55 @@ def extract_contact_info(pr_data, driver):
                         # Usually: Name, Title, Email OR Name, Email
                         if i > 0:
                             prev_line = lines[i-1]
-                            # If previous line is not a generic label or too long
-                            if not re.search(r'@|http|www|Contact:', prev_line) and len(prev_line) < 50:
+                            
+                            # Skip generic labels like "Email:", "Contact:", "Media Contact:"
+                            # Also skip if it ends with ":"
+                            if re.search(r'^(Email|Contact|Media Contact|Press Contact):?$', prev_line, re.IGNORECASE) or prev_line.endswith(':'):
+                                # If prev_line is a label, look back one more line
+                                if i > 1:
+                                    prev_line = lines[i-2]
+                                    # Update index for further lookbacks
+                                    name_idx = i-2
+                                else:
+                                    prev_line = ""
+                                    name_idx = -1
+                            else:
+                                name_idx = i-1
                                 
-                                # Check if prev_line is likely a title (contains "Head", "VP", "Director", "Manager", "Officer")
-                                is_title = any(t in prev_line for t in ["Head", "VP", "Director", "Manager", "Officer", "Chief", "President"])
+                            if prev_line and not re.search(r'@|http|www', prev_line) and len(prev_line) < 100:
                                 
-                                if is_title and i > 1:
-                                    # If prev_line is a title, then the line before that (i-2) is likely the name
-                                    prev_prev = lines[i-2]
-                                    if not re.search(r'@|http|www|Contact:', prev_prev) and len(prev_prev) < 50:
+                                # Check if prev_line is likely a title
+                                is_title = any(t in prev_line for t in ["Head", "VP", "Director", "Manager", "Officer", "Chief", "President", "Lead", "Partner"])
+                                
+                                if is_title and name_idx > 0:
+                                    # If prev_line is a title, then the line before that is likely the name
+                                    prev_prev = lines[name_idx-1]
+                                    if not re.search(r'@|http|www|Contact:', prev_prev) and len(prev_prev) < 100:
                                         if not prev_prev.startswith("For "):
                                             current_contact['name'] = prev_prev
                                             current_contact['title'] = prev_line
                                         else:
-                                            # If i-2 starts with "For ", it's a company header, so i-1 is the name (even if it looks like a title)
+                                            # If starts with "For ", it's a company header, so prev_line is the name
                                             current_contact['name'] = prev_line
                                             current_contact['company'] = prev_prev
                                 else:
-                                    # Default: i-1 is the name
+                                    # Default: prev_line is the name
                                     current_contact['name'] = prev_line
                                     
                                     # Look back one more line for Company
-                                    if i > 1:
-                                        prev_prev = lines[i-2]
-                                        if not re.search(r'@|http|www|Contact:', prev_prev) and len(prev_prev) < 50:
+                                    if name_idx > 0:
+                                        prev_prev = lines[name_idx-1]
+                                        if not re.search(r'@|http|www|Contact:', prev_prev) and len(prev_prev) < 100:
                                             if prev_prev.startswith("For "):
                                                 current_contact['company'] = prev_prev
                         
+                        # Handle "Name for Company" pattern in extracted name
+                        if 'name' in current_contact and ' for ' in current_contact['name']:
+                            parts = current_contact['name'].split(' for ')
+                            if len(parts) == 2:
+                                current_contact['name'] = parts[0]
+                                current_contact['company'] = parts[1]
+
                         # Look for phone in same line or next
                         phone_match = re.search(r'\+?1?[-.]?\(?\d{3}\)?[-.]?\d{3}[-.]?\d{4}', line)
                         if phone_match:
@@ -287,9 +308,11 @@ def extract_contact_info(pr_data, driver):
                         # Save the full raw block for this contact to ensure we capture everything
                         # We'll construct a nice block for the markdown
                         raw_lines = []
-                        start_idx = max(0, i-2)
+                        start_idx = max(0, i-3) # Look back further
                         end_idx = min(len(lines), i+2)
                         for k in range(start_idx, end_idx):
+                            # Skip label lines in raw block if possible, or keep them? 
+                            # Better to keep them for context, but maybe clean up "Email:"
                             raw_lines.append(lines[k])
                         current_contact['raw_block'] = '\n'.join(raw_lines)
                         
@@ -300,9 +323,10 @@ def extract_contact_info(pr_data, driver):
         unique_contacts = []
         seen_emails = set()
         for c in contacts:
-            if c['email'] not in seen_emails:
+            email = c.get('email', '').strip().lower()
+            if email and email not in seen_emails:
                 unique_contacts.append(c)
-                seen_emails.add(c['email'])
+                seen_emails.add(email)
         contacts = unique_contacts
 
         # Strategy 2: Fallback to regex on full text if no structured contacts found
