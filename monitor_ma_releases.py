@@ -147,15 +147,31 @@ def extract_contact_info_selenium(driver, url):
         
         # Check if we are on a Google News redirect page
         if "news.google.com" in driver.current_url:
-            # Wait for redirect
-            time.sleep(3)
+            log("  On Google News redirect page, waiting...")
+            time.sleep(5)
+            # Check if there's a link to click (sometimes auto-redirect fails)
+            try:
+                links = driver.find_elements(By.TAG_NAME, "a")
+                for link in links:
+                    if "businesswire.com" in link.get_attribute("href"):
+                        log("  Found direct link, clicking...")
+                        link.click()
+                        time.sleep(3)
+                        break
+            except:
+                pass
+        
+        # Wait for potential Business Wire content
+        time.sleep(2)
         
         # Get page source
         content = driver.page_source
         
         # Check for access denied
-        if "Access Denied" in content:
-            log("  Access Denied via Selenium")
+        if "Access Denied" in content or "Please enable JS" in content:
+            log("  Access Denied/Challenge via Selenium")
+            # Try to take a screenshot if possible (saved to local runner)
+            # driver.save_screenshot("access_denied.png")
             return None
             
         return content
@@ -231,6 +247,10 @@ def extract_contact_info(pr_data, driver):
             if not valid_emails and emails:
                 valid_emails = emails
             contacts = [{'email': email} for email in valid_emails[:3]]
+            
+        if not contacts:
+            log(f"  No contacts found. Content length: {len(full_text)}")
+            log(f"  Snippet: {full_text[:200].replace(chr(10), ' ')}")
         
         return {
             'title': pr_data['title'],
