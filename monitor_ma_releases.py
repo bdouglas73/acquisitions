@@ -313,17 +313,20 @@ def generate_markdown_report(acquisitions, date_str):
         if acq['contacts']:
             report += "**Contact Information:**\n"
             for contact in acq['contacts']:
-                name = contact.get('name', 'Media Contact')
-                email = contact.get('email', '')
-                phone = contact.get('phone', '')
-                
-                # Format as block
-                report += f"{name}\n"
-                if email:
-                    report += f"{email}\n"
-                if phone:
-                    report += f"Tel: {phone}\n"
-                report += "\n"
+                if 'raw_block' in contact:
+                    report += f"{contact['raw_block']}\n\n"
+                else:
+                    # Fallback for legacy format
+                    name = contact.get('name', 'Media Contact')
+                    email = contact.get('email', '')
+                    phone = contact.get('phone', '')
+                    
+                    report += f"{name}\n"
+                    if email:
+                        report += f"{email}\n"
+                    if phone:
+                        report += f"Tel: {phone}\n"
+                    report += "\n"
         else:
             report += "**Contact Information:**\nNone found\n"
             
