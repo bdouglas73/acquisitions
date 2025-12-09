@@ -2,8 +2,8 @@ name: Daily M&A Report Generation
 
 on:
   schedule:
-    # Run at 13:00 UTC (8:00 AM ET) and 18:00 UTC (1:00 PM ET)
-    - cron: '0 13,18 * * *'
+    # Run every hour at minute 0
+    - cron: '0 * * * *'
   workflow_dispatch: # Allows manual triggering
 
 jobs:
@@ -21,12 +21,17 @@ jobs:
         with:
           python-version: '3.10'
 
+      - name: Install Chrome and ChromeDriver
+        uses: browser-actions/setup-chrome@latest
+        with:
+          chrome-version: stable
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-          # Ensure requests and beautifulsoup4 are installed if not in requirements
-          pip install requests beautifulsoup4 pytz
+          # Install required packages for the new script
+          pip install requests beautifulsoup4 pytz selenium webdriver-manager
 
       - name: Run report generation script
         env:
@@ -40,5 +45,8 @@ jobs:
         run: |
           git config --global user.name 'GitHub Action'
           git config --global user.email 'action@github.com'
-          git add daily-reports/
-          git diff --quiet && git diff --staged --quiet || (git commit -m "Add daily report for $(date +'%Y-%m-%d')" && git push)
+          # Add all markdown files in the root (where the script saves them)
+          git add *.md
+          # Also add daily-reports folder if used
+          if [ -d "daily-reports" ]; then git add daily-reports/; fi
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Update M&A report for $(date +'%Y-%m-%d')" && git push)
