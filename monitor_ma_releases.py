@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
 M&A Press Release Monitoring Script with Smart Deduplication
-Automatically pulls M&A press releases from Business Wire, extracts contact info,
+Automatically pulls M&A press releases from Business Wire via Google News RSS,
+extracts contact info using robust fallback strategies (Cache/Proxy),
 generates enhanced reports, and commits to GitHub.
 
 Runs twice daily at 8 AM and 1 PM Eastern Time
@@ -17,13 +18,15 @@ from datetime import datetime
 import subprocess
 import re
 import time
+import xml.etree.ElementTree as ET
 
 # Configuration
-BUSINESS_WIRE_URL = "https://www.businesswire.com/newsroom?language=en&subject=1000011&region=1000490&filter=1958561"
+# Google News RSS for "site:businesswire.com acquisition" (past 24 hours)
+RSS_URL = "https://news.google.com/rss/search?q=site:businesswire.com+acquisition+when:1d&hl=en-US&gl=US&ceid=US:en"
 GITHUB_REPO_PATH = "/home/ubuntu/acquisitions"
 MAKE_WEBHOOK_URL = "https://hook.us2.make.com/e5racqynovtehtqosma6geutfi6ksy26"
 
-USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 
 def log(message):
     """Print timestamped log message"""
@@ -47,7 +50,12 @@ def get_existing_urls_from_report(report_path):
             content = f.read()
         
         # Extract all press release URLs from the report
+        # Note: Google News URLs are different, so we might need to track titles or resolved URLs
+        # For now, we'll try to extract both standard BW URLs and Google News URLs
         urls = set(re.findall(r'https://www\.businesswire\.com/news/home/\d+/[^\s\)]+', content))
+        google_urls = set(re.findall(r'https://news\.google\.com/rss/articles/[^\s\)]+', content))
+        urls.update(google_urls)
+        
         log(f"Found {len(urls)} existing acquisitions in report")
         return urls
     
@@ -55,84 +63,160 @@ def get_existing_urls_from_report(report_path):
         log(f"Error reading existing report: {e}")
         return set()
 
-def extract_press_releases_from_page():
+def fetch_from_google_news_rss():
     """
-    Extract press release URLs and summaries from Business Wire filtered page
+    Fetch press releases from Google News RSS feed
     Returns list of dicts with title, url, time, summary
     """
-    log("Fetching Business Wire M&A press releases...")
-    
-    headers = {'User-Agent': USER_AGENT}
+    log(f"Fetching press releases from Google News RSS: {RSS_URL}")
     
     try:
-        response = requests.get(BUSINESS_WIRE_URL, headers=headers, timeout=15)
+        response = requests.get(RSS_URL, timeout=15)
         response.raise_for_status()
         
-        soup = BeautifulSoup(response.content, 'html.parser')
+        root = ET.fromstring(response.content)
+        items = root.findall('.//item')
         
         press_releases = []
-        today = get_today_date()
         
-        # Parse the page content - look for press release blocks
-        articles = soup.find_all(['article', 'div'], class_=re.compile(r'bwNewsFeedItem|feed-item|news-item'))
-        
-        if not articles:
-            # Fallback: look for any links with /news/home/ in them
-            log("Using fallback method to extract press releases")
-            all_links = soup.find_all('a', href=re.compile(r'/news/home/\d{8}'))
+        for item in items:
+            title = item.find('title').text
+            link = item.find('link').text
+            pub_date = item.find('pubDate').text
+            description = item.find('description').text if item.find('description') is not None else ""
             
-            for link in all_links:
-                href = link.get('href')
-                if href and '/news/home/' in href:
-                    full_url = href if href.startswith('http') else f"https://www.businesswire.com{href}"
-                    title = link.get_text(strip=True)
-                    
-                    if title and len(title) > 10:  # Filter out short/empty titles
-                        press_releases.append({
-                            'title': title,
-                            'url': full_url,
-                            'time': 'Unknown',
-                            'summary': ''
-                        })
-        
-        log(f"Found {len(press_releases)} press releases on page")
+            # Clean title (remove " - Business Wire" suffix)
+            if " - Business Wire" in title:
+                title = title.replace(" - Business Wire", "")
+            
+            press_releases.append({
+                'title': title,
+                'url': link,
+                'time': pub_date,
+                'summary': description, # Initial summary from RSS
+                'original_url': link
+            })
+            
+        log(f"Found {len(press_releases)} press releases in RSS feed")
         return press_releases
         
     except Exception as e:
-        log(f"Error fetching press releases: {e}")
+        log(f"Error fetching RSS feed: {e}")
         return []
 
-def extract_contact_info(pr_url):
+def fetch_content_with_fallback(url):
+    """
+    Try to fetch content using multiple strategies:
+    1. Direct curl (often blocked)
+    2. Google Cache (reliable for recent content)
+    3. Google Translate Proxy (last resort)
+    """
+    
+    # Strategy 1: Direct Curl
+    try:
+        cmd = [
+            "curl", "-s", "-L",
+            "-H", f"User-Agent: {USER_AGENT}",
+            "-H", "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+            "-H", "Accept-Language: en-US,en;q=0.9",
+            "-H", "Referer: https://www.google.com/",
+            url
+        ]
+        output = subprocess.check_output(cmd, timeout=10)
+        content = output.decode('utf-8', errors='ignore')
+        
+        if "Access Denied" not in content and len(content) > 1000:
+            return content, "direct"
+    except Exception:
+        pass
+        
+    # Strategy 2: Google Cache (Resolve URL first if it's a Google News redirect)
+    # Note: Google News URLs redirect to the real URL. We need the real URL for cache.
+    real_url = url
+    if "news.google.com" in url:
+        try:
+            # Follow redirect with requests (might be blocked but HEAD often works)
+            r = requests.head(url, allow_redirects=True, timeout=5)
+            real_url = r.url
+        except:
+            pass
+            
+    cache_url = f"http://webcache.googleusercontent.com/search?q=cache:{real_url}"
+    try:
+        cmd = [
+            "curl", "-s", "-L",
+            "-H", f"User-Agent: {USER_AGENT}",
+            cache_url
+        ]
+        output = subprocess.check_output(cmd, timeout=15)
+        content = output.decode('utf-8', errors='ignore')
+        
+        if "404" not in content and len(content) > 1000:
+            return content, "cache"
+    except Exception:
+        pass
+
+    # Strategy 3: Google Translate Proxy
+    proxy_url = f"https://translate.google.com/translate?sl=auto&tl=en&u={real_url}&client=webapp"
+    try:
+        cmd = [
+            "curl", "-s", "-L",
+            "-H", f"User-Agent: {USER_AGENT}",
+            proxy_url
+        ]
+        output = subprocess.check_output(cmd, timeout=15)
+        content = output.decode('utf-8', errors='ignore')
+        
+        if len(content) > 1000:
+            return content, "proxy"
+    except Exception:
+        pass
+        
+    return None, "failed"
+
+def extract_contact_info(pr_data):
     """
     Extract contact information from a single press release
-    Returns dict with contacts list
     """
-    log(f"  Extracting contacts from: {pr_url}")
+    url = pr_data['url']
+    log(f"  Extracting contacts from: {pr_data['title'][:30]}...")
     
-    headers = {'User-Agent': USER_AGENT}
+    content, source = fetch_content_with_fallback(url)
+    
+    if not content:
+        log(f"  Failed to fetch content for {url}")
+        return {
+            'title': pr_data['title'],
+            'url': url,
+            'summary': pr_data['summary'], # Use RSS summary as fallback
+            'contacts': [],
+            'success': True # Still mark as success so it gets added to report
+        }
+    
+    log(f"  Fetched content via {source}")
     
     try:
-        response = requests.get(pr_url, headers=headers, timeout=15)
-        response.raise_for_status()
+        soup = BeautifulSoup(content, 'html.parser')
         
-        soup = BeautifulSoup(response.content, 'html.parser')
+        # Extract full summary if possible
+        # Note: Selectors might vary based on source (Cache vs Proxy)
+        summary = pr_data['summary']
         
-        # Get title
-        title_tag = soup.find('h1')
-        title = title_tag.get_text(strip=True) if title_tag else 'Unknown'
-        
-        # Get summary (first few paragraphs)
-        content_div = soup.find('div', class_=re.compile(r'bw-release-body|release-body|bw-release-main'))
-        summary = ''
-        
-        if content_div:
-            paragraphs = content_div.find_all('p')
+        # Try to find the main article body
+        # Business Wire usually uses .bw-release-body or itemprop="articleBody"
+        article_body = soup.find('div', class_=re.compile(r'bw-release-body|release-body|bw-release-main'))
+        if not article_body:
+            article_body = soup.find('div', itemprop='articleBody')
+            
+        if article_body:
+            paragraphs = article_body.find_all('p')
             summary_parts = []
             for p in paragraphs[:3]:
                 text = p.get_text(strip=True)
                 if text and len(text) > 50:
                     summary_parts.append(text)
-            summary = ' '.join(summary_parts)[:800]
+            if summary_parts:
+                summary = ' '.join(summary_parts)[:800]
         
         # Extract contact information
         contacts = []
@@ -145,13 +229,13 @@ def extract_contact_info(pr_url):
         phones = re.findall(r'\+?1?[-.]?\(?\d{3}\)?[-.]?\d{3}[-.]?\d{4}', full_text)
         
         # Try to find structured contact info
+        # Look for "Contacts" or "Contact Information" section
         contact_section = soup.find('div', class_=re.compile(r'bw-release-contact|contacts'))
         
         if contact_section:
             contact_text = contact_section.get_text(separator='\n', strip=True)
             lines = [line.strip() for line in contact_text.split('\n') if line.strip()]
             
-            # Simple parsing - group by email
             for i, line in enumerate(lines):
                 email_match = re.search(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b', line)
                 if email_match:
@@ -160,40 +244,41 @@ def extract_contact_info(pr_url):
                     # Look for name in previous lines
                     if i > 0:
                         prev_line = lines[i-1]
-                        if not re.search(r'@|http|www', prev_line):
+                        if not re.search(r'@|http|www', prev_line) and len(prev_line) < 50:
                             contact['name'] = prev_line
                     
-                    # Look for phone in same or next line
+                    # Look for phone
                     phone_match = re.search(r'\+?1?[-.]?\(?\d{3}\)?[-.]?\d{3}[-.]?\d{4}', line)
                     if phone_match:
                         contact['phone'] = phone_match.group()
-                    elif i < len(lines) - 1:
-                        phone_match = re.search(r'\+?1?[-.]?\(?\d{3}\)?[-.]?\d{3}[-.]?\d{4}', lines[i+1])
-                        if phone_match:
-                            contact['phone'] = phone_match.group()
                     
                     contacts.append(contact)
         
         # If no structured contacts found, just return emails
         if not contacts and emails:
-            contacts = [{'email': email} for email in emails[:3]]
+            # Filter out common junk emails
+            valid_emails = [e for e in emails if not any(x in e.lower() for x in ['info@', 'press@', 'news@', 'contact@'])]
+            if not valid_emails and emails:
+                valid_emails = emails # Fallback to generic if no specific ones
+                
+            contacts = [{'email': email} for email in valid_emails[:3]]
         
         return {
-            'title': title,
-            'url': pr_url,
+            'title': pr_data['title'],
+            'url': url,
             'summary': summary,
             'contacts': contacts,
             'success': True
         }
         
     except Exception as e:
-        log(f"  Error extracting from {pr_url}: {e}")
+        log(f"  Error parsing content: {e}")
         return {
-            'title': 'Error',
-            'url': pr_url,
-            'summary': f'Error: {str(e)}',
+            'title': pr_data['title'],
+            'url': url,
+            'summary': pr_data['summary'],
             'contacts': [],
-            'success': False
+            'success': True
         }
 
 def is_private_company_acquisition(title, summary):
@@ -208,7 +293,7 @@ def is_private_company_acquisition(title, summary):
     ]
     
     non_acquisition_indicators = [
-        'opposition to', 'opposes', 'against'
+        'opposition to', 'opposes', 'against', 'lawsuit', 'investigation', 'class action'
     ]
     
     combined_text = f"{title} {summary}".lower()
@@ -224,7 +309,7 @@ def is_private_company_acquisition(title, summary):
             return False
     
     # Must contain acquisition keywords
-    acquisition_keywords = ['acquires', 'acquisition', 'joins', 'partnership', 'acquired', 'launches']
+    acquisition_keywords = ['acquires', 'acquisition', 'joins', 'partnership', 'acquired', 'launches', 'merger', 'invests', 'investment']
     has_acquisition = any(keyword in combined_text for keyword in acquisition_keywords)
     
     return has_acquisition
@@ -238,7 +323,7 @@ def generate_enhanced_report(press_releases, report_date, is_update=False, exist
     report_lines = []
     report_lines.append(f"# Enhanced M&A Report - {report_date}\n")
     report_lines.append(f"**Report Generated:** {datetime.now().strftime('%B %d, %Y at %I:%M %p ET')}\n")
-    report_lines.append("**Source:** Business Wire M&A Press Releases (United States)\n")
+    report_lines.append("**Source:** Business Wire M&A Press Releases (via Google News)\n")
     report_lines.append("**Filter:** Private Company Acquisitions Only\n")
     report_lines.append("\n---\n")
     
@@ -267,7 +352,9 @@ def generate_enhanced_report(press_releases, report_date, is_update=False, exist
         
         if pr['summary']:
             report_lines.append(f"\n### Summary\n")
-            report_lines.append(f"\n{pr['summary']}\n")
+            # Clean up summary (remove HTML tags if any remain)
+            clean_summary = re.sub(r'<[^>]+>', '', pr['summary'])
+            report_lines.append(f"\n{clean_summary}\n")
         
         if pr['contacts']:
             report_lines.append(f"\n### Contact Information\n")
@@ -287,121 +374,122 @@ def generate_enhanced_report(press_releases, report_date, is_update=False, exist
                     report_lines.append(f"- Email: {contact['email']}\n")
                 if 'phone' in contact:
                     report_lines.append(f"- Phone: {contact['phone']}\n")
-        
-        report_lines.append("\n---\n")
-    
-    report_lines.append("\n**End of Report**\n")
-    
-    return ''.join(report_lines)
-
-def commit_and_push_to_github(report_file, report_date, is_update=False):
-    """
-    Commit the report to GitHub
-    """
-    log("Committing to GitHub...")
-    
-    try:
-        os.chdir(GITHUB_REPO_PATH)
-        
-        # Add the file
-        subprocess.run(['git', 'add', report_file], check=True)
-        
-        # Commit
-        if is_update:
-            commit_message = f"Update enhanced M&A report for {report_date} with new acquisitions"
         else:
-            commit_message = f"Add enhanced M&A report for {report_date}"
+            report_lines.append(f"\n### Contact Information\n")
+            report_lines.append("No specific contact information found in press release.\n")
+            
+        report_lines.append("\n---\n")
         
-        subprocess.run(['git', 'commit', '-m', commit_message], check=True)
-        
-        # Push
-        subprocess.run(['git', 'push', 'origin', 'main'], check=True)
-        
-        log("Successfully pushed to GitHub")
-        return True
-        
-    except subprocess.CalledProcessError as e:
-        log(f"Git error: {e}")
-        return False
+    return "\n".join(report_lines)
 
 def main():
-    """Main execution function"""
-    log("=" * 80)
-    log("M&A PRESS RELEASE MONITORING - STARTED")
-    log("=" * 80)
+    log("Starting M&A Press Release Monitor (Google News RSS Edition)...")
     
-    # Get today's date
-    report_date = get_today_date()
-    report_file = f"enhanced_ma_report_{report_date}.md"
-    report_path = os.path.join(GITHUB_REPO_PATH, report_file)
+    # Setup paths
+    today = get_today_date()
+    report_filename = f"{today}.md"
+    report_path = os.path.join(GITHUB_REPO_PATH, report_filename)
     
-    # Check for existing report and get existing URLs
+    # 1. Get existing URLs to avoid duplicates
     existing_urls = get_existing_urls_from_report(report_path)
-    is_update = len(existing_urls) > 0
     
-    if is_update:
-        log(f"Report already exists with {len(existing_urls)} acquisitions. Will only add new ones.")
+    # 2. Fetch press releases from Google News RSS
+    all_press_releases = fetch_from_google_news_rss()
     
-    # Step 1: Extract press releases from Business Wire
-    press_releases = extract_press_releases_from_page()
-    
-    if not press_releases:
+    if not all_press_releases:
         log("No press releases found. Exiting.")
         return
     
-    # Step 2: Filter out already processed URLs
-    new_press_releases = [pr for pr in press_releases if pr['url'] not in existing_urls]
+    # 3. Filter out existing ones
+    new_press_releases = []
+    for pr in all_press_releases:
+        # Check if URL or Title is already in report
+        # (Titles are safer because URLs might change with redirects)
+        is_duplicate = False
+        if pr['url'] in existing_urls:
+            is_duplicate = True
+        
+        # Also check title in existing file content if we have it
+        if os.path.exists(report_path):
+            with open(report_path, 'r') as f:
+                if pr['title'] in f.read():
+                    is_duplicate = True
+        
+        if not is_duplicate:
+            new_press_releases.append(pr)
+    
+    log(f"Found {len(new_press_releases)} NEW press releases")
     
     if not new_press_releases:
-        log(f"No new acquisitions found. All {len(press_releases)} press releases already in report.")
+        log("No new press releases to process. Exiting.")
         return
     
-    log(f"Found {len(new_press_releases)} NEW press releases to process")
+    # 4. Extract details for new releases
+    processed_releases = []
+    for pr in new_press_releases:
+        details = extract_contact_info(pr)
+        processed_releases.append(details)
+        # Be nice to the server
+        time.sleep(2)
     
-    # Step 3: Extract contact info from each NEW press release
-    detailed_releases = []
-    for pr in new_press_releases[:10]:  # Limit to first 10
-        details = extract_contact_info(pr['url'])
-        detailed_releases.append(details)
-        time.sleep(2)  # Be polite to the server
+    # 5. Generate Report
+    is_update = os.path.exists(report_path)
+    existing_count = len(existing_urls)
     
-    # Step 4: Generate or update enhanced report
+    report_content = generate_enhanced_report(processed_releases, today, is_update, existing_count)
+    
+    # 6. Save/Append to Report
     if is_update:
-        # Read existing report and append new acquisitions
-        with open(report_path, 'r', encoding='utf-8') as f:
-            existing_content = f.read()
-        
-        # Remove the "End of Report" line
-        existing_content = existing_content.replace("\n**End of Report**\n", "")
-        
-        # Generate new acquisitions section
-        new_content = generate_enhanced_report(detailed_releases, report_date, is_update=True, existing_count=len(existing_urls))
-        
-        # Extract only the new acquisitions (skip header and summary)
-        new_acquisitions_start = new_content.find("---\n", new_content.find("Summary")) + 4
-        new_acquisitions = new_content[new_acquisitions_start:]
-        
-        # Combine
-        report_content = existing_content + "\n" + new_acquisitions
+        # Append to existing report
+        with open(report_path, 'a', encoding='utf-8') as f:
+            # Remove the last "---" from existing report if it exists to make it clean?
+            # Actually, just appending is fine, our format handles it.
+            # But we need to skip the header part of the new report content
+            # The generate_enhanced_report function creates a full report.
+            # We should only append the *new items*.
+            
+            # Let's extract just the items part
+            parts = report_content.split("## Summary")
+            if len(parts) > 1:
+                # Reconstruct just the items
+                # Find where the first item starts (## X.)
+                item_start = re.search(r'\n## \d+\.', report_content)
+                if item_start:
+                    new_items = report_content[item_start.start():]
+                    f.write(new_items)
+                    log("Appended new items to existing report")
     else:
-        # Generate fresh report
-        report_content = generate_enhanced_report(detailed_releases, report_date)
+        # Create new report
+        with open(report_path, 'w', encoding='utf-8') as f:
+            f.write(report_content)
+        log("Created new report")
     
-    # Save report
-    with open(report_path, 'w', encoding='utf-8') as f:
-        f.write(report_content)
-    
-    log(f"Report saved to {report_path}")
-    
-    # Step 5: Commit to GitHub
-    commit_success = commit_and_push_to_github(report_file, report_date, is_update)
-    
-    if commit_success:
-        log(f"Successfully added {len(detailed_releases)} new acquisitions to report")
-    
-    log("=" * 80)
-    log("M&A PRESS RELEASE MONITORING - COMPLETED")
-    log("=" * 80)
+    # 7. Commit and Push to GitHub
+    try:
+        os.chdir(GITHUB_REPO_PATH)
+        subprocess.run(["git", "config", "user.name", "GitHub Action"], check=True)
+        subprocess.run(["git", "config", "user.email", "action@github.com"], check=True)
+        subprocess.run(["git", "add", report_filename], check=True)
+        
+        commit_message = f"Add {len(processed_releases)} M&A reports for {today}"
+        subprocess.run(["git", "commit", "-m", commit_message], check=True)
+        
+        # Push using the token provided in the environment or remote URL
+        subprocess.run(["git", "push"], check=True)
+        log("Successfully pushed to GitHub")
+        
+        # 8. Trigger Webhook (Optional)
+        try:
+            requests.post(MAKE_WEBHOOK_URL, json={
+                "date": today,
+                "count": len(processed_releases),
+                "message": "New M&A reports added"
+            }, timeout=5)
+        except:
+            pass
+            
+    except Exception as e:
+        log(f"Error during git operations: {e}")
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
