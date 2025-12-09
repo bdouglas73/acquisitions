@@ -5,14 +5,34 @@
         "location": {
           "index": 1
         },
-        "text": "1. Stonepeak Launches Peregrine Cold Logistics\n\n"
+        "text": "Enhanced M&A Report - December 8, 2025\n\n"
       }
     },
     {
       "updateParagraphStyle": {
         "range": {
           "startIndex": 1,
-          "endIndex": 48
+          "endIndex": 39
+        },
+        "paragraphStyle": {
+          "namedStyleType": "HEADING_1"
+        },
+        "fields": "namedStyleType"
+      }
+    },
+    {
+      "insertText": {
+        "location": {
+          "index": 41
+        },
+        "text": "1. Stonepeak Launches Peregrine Cold Logistics\n\n"
+      }
+    },
+    {
+      "updateParagraphStyle": {
+        "range": {
+          "startIndex": 41,
+          "endIndex": 87
         },
         "paragraphStyle": {
           "namedStyleType": "HEADING_2"
@@ -23,31 +43,31 @@
     {
       "insertText": {
         "location": {
-          "index": 49
+          "index": 89
         },
-        "text": "Acquirer: Stonepeak (Private - Alternative Investment Firm)  \nTarget: Peregrine Cold Logistics (New Platform Launch + Pinnacle Cold Storage Inc.)  \nTime: 6:00 PM ET  \n\n"
+        "text": "Date: December 8, 2025 6:00 PM ET\n\n"
       }
     },
     {
       "insertText": {
         "location": {
-          "index": 217
+          "index": 124
         },
-        "text": "Stonepeak, a leading alternative investment firm specializing in infrastructure and real assets, today announced the launch of Peregrine Cold Logistics, a new cold chain logistics platform in Asia Pacific and the GCC, to meet the accelerating demand for temperature-controlled infrastructure across the region. Headquartered in Singapore, Peregrine will target cold chain opportunities across key markets including the ASEAN region, North Asia, and the GCC, with the goal of providing high-quality storage capacity and ancillary logistics solutions to support the movement of temperature-sensitive and perishable goods throughout the supply chain. In conjunction with the launch, Peregrine has agreed to acquire an initial seed asset, Pinnacle Cold Storage Inc., a cold storage business in the Philippines.\n\n"
+        "text": "Stonepeak, a leading alternative investment firm specializing in infrastructure and real assets, announced the launch of Peregrine Cold Logistics, a new cold chain logistics platform in Asia Pacific and the GCC. Headquartered in Singapore, Peregrine will target cold chain opportunities across key markets including the ASEAN region, North Asia, and the GCC. In conjunction with the launch, Peregrine has agreed to acquire an initial seed asset, Pinnacle Cold Storage Inc., a cold storage business in the Philippines.\n\n"
       }
     },
     {
       "insertText": {
         "location": {
-          "index": 1025
+          "index": 643
         },
-        "text": "Contact Information:\n**For Peregrine Cold Logistics:**\n- Name: James Buck\n- Email: james.buck@peregrinecold.com\n\n**For Stonepeak:**\n- Names: Kate Beers / Maya Brounstein\n- Email: corporatecomms@stonepeak.com\n- Phone: +1 (646) 540-5225\n\n"
+        "text": "Contact Information:\nFor Peregrine Cold Logistics:\n- James Buck\n- Email: james.buck@peregrinecold.com\n\nFor Stonepeak:\n- Kate Beers / Maya Brounstein\n- Email: corporatecomms@stonepeak.com\n- Phone: +1 (646) 540-5225\n\n"
       }
     },
     {
       "insertText": {
         "location": {
-          "index": 1261
+          "index": 858
         },
         "text": "Press Release: "
       }
@@ -55,7 +75,7 @@
     {
       "insertText": {
         "location": {
-          "index": 1276
+          "index": 873
         },
         "text": "https://www.businesswire.com/news/home/20251208366726/en/Stonepeak-Launches-Peregrine-Cold-Logistics"
       }
@@ -63,8 +83,8 @@
     {
       "updateTextStyle": {
         "range": {
-          "startIndex": 1276,
-          "endIndex": 1376
+          "startIndex": 873,
+          "endIndex": 973
         },
         "textStyle": {
           "link": {
@@ -77,7 +97,7 @@
     {
       "insertText": {
         "location": {
-          "index": 1376
+          "index": 973
         },
         "text": "\n\n================================================================================\n\n"
       }
@@ -85,16 +105,16 @@
     {
       "insertText": {
         "location": {
-          "index": 1460
+          "index": 1057
         },
-        "text": "2. Jade Global Acquires D4M International\n\n"
+        "text": "2. Dermatology Associates Joins Epiphany Dermatology\n\n"
       }
     },
     {
       "updateParagraphStyle": {
         "range": {
-          "startIndex": 1460,
-          "endIndex": 1502
+          "startIndex": 1057,
+          "endIndex": 1109
         },
         "paragraphStyle": {
           "namedStyleType": "HEADING_2"
@@ -105,31 +125,31 @@
     {
       "insertText": {
         "location": {
-          "index": 1503
+          "index": 1111
         },
-        "text": "Acquirer: Jade Global, Inc. (Private)  \nTarget: D4M International  \nTime: 12:45 PM ET  \n\n"
+        "text": "Date: December 8, 2025 1:47 PM ET\n\n"
       }
     },
     {
       "insertText": {
         "location": {
-          "index": 1592
+          "index": 1146
         },
-        "text": "Jade Global, Inc., a global leader in digital transformation services, announces that it has acquired D4M International, an SAP transformation partner enabling manufacturers to streamline operations and accelerate their digital manufacturing journey. The acquisition brings together Jade's breadth of expertise in cloud, data, AI, and enterprise applications with D4M's two decades of domain expertise in SAP S/4HANA, Digital Supply Chain, and comprehensive enterprise and manufacturing transformation solutions. This acquisition strengthens Jade's global footprint, enabling expansion in the Automotive, Manufacturing, and other industrial sectors in North America, where D4M has a significant presence.\n\n"
+        "text": "Epiphany Dermatology, a leading dermatology company committed to improving access to exceptional dermatologic care, announced it has expanded its presence in Texas through its partnership with Dermatology Associates of San Antonio. Founded in 1985, the practice is an all-physician group comprised of 16 board-certified dermatologists offering a full range of dermatology services across three locations in San Antonio, TX.\n\n"
       }
     },
     {
       "insertText": {
         "location": {
-          "index": 2298
+          "index": 1571
         },
-        "text": "Contact Information:\n**For Jade Global:**\n- Name: Payal Mathur\n- Title: Head of Marketing\n- Email: info@jadeglobal.com\n\n**For D4M International:**\n- Name: Michelle Lenoir\n- Title: Head of Marketing\n- Email: info@d4m-int.com\n\n"
+        "text": "Contact Information:\n- Ted Emmert\n  Chief Development Officer\n  Phone: (512) 628-0465\n  Email: temmert@epiphanydermatology.com\n\n- Gheorghe Pusta\n  Chief Executive Officer\n  Phone: (512) 628-0465\n  Email: gpusta@epiphanydermatology.com\n\n"
       }
     },
     {
       "insertText": {
         "location": {
-          "index": 2523
+          "index": 1807
         },
         "text": "Press Release: "
       }
@@ -137,253 +157,7 @@
     {
       "insertText": {
         "location": {
-          "index": 2538
-        },
-        "text": "https://www.businesswire.com/news/home/20251208769994/en/Jade-Global-Acquires-D4M-International-to-Expand-Smart-Manufacturing-and-SAP-Capabilities-Worldwide"
-      }
-    },
-    {
-      "updateTextStyle": {
-        "range": {
-          "startIndex": 2538,
-          "endIndex": 2694
-        },
-        "textStyle": {
-          "link": {
-            "url": "https://www.businesswire.com/news/home/20251208769994/en/Jade-Global-Acquires-D4M-International-to-Expand-Smart-Manufacturing-and-SAP-Capabilities-Worldwide"
-          }
-        },
-        "fields": "link"
-      }
-    },
-    {
-      "insertText": {
-        "location": {
-          "index": 2694
-        },
-        "text": "\n\n================================================================================\n\n"
-      }
-    },
-    {
-      "insertText": {
-        "location": {
-          "index": 2778
-        },
-        "text": "3. Milliman Announces Acquisition of MorVest Capital\n\n"
-      }
-    },
-    {
-      "updateParagraphStyle": {
-        "range": {
-          "startIndex": 2778,
-          "endIndex": 2831
-        },
-        "paragraphStyle": {
-          "namedStyleType": "HEADING_2"
-        },
-        "fields": "namedStyleType"
-      }
-    },
-    {
-      "insertText": {
-        "location": {
-          "index": 2832
-        },
-        "text": "Acquirer: Milliman, Inc. (Private)  \nTarget: MorVest Capital  \nTime: 12:00 PM ET  \n\n"
-      }
-    },
-    {
-      "insertText": {
-        "location": {
-          "index": 2916
-        },
-        "text": "Milliman, Inc., a leading global consulting and actuarial firm, today announced the acquisition of MorVest Capital, a premier provider of mortgage servicing rights (MSR) analytics, risk management, and advisory services. This strategic move reinforces Milliman's commitment to delivering comprehensive analytical solutions to the mortgage sector and expands its capabilities with MSR valuation, financing, hedging, and brokering. MorVest Capital, founded in 2013 and headquartered in Dallas, Texas, is recognized for its deep industry insights and client-centered approach to MSR strategy. The acquisition brings together Milliman's renowned analytic and consulting capabilities with MorVest's MSR expertise, creating a comprehensive offering for lenders, servicers, and investors.\n\n"
-      }
-    },
-    {
-      "insertText": {
-        "location": {
-          "index": 3699
-        },
-        "text": "Contact Information:\n**For Milliman:**\n- Name: Jeremy Engdahl-Johnson\n- Company: Milliman, Inc.\n- Phone: +1 646.473.3021\n- Email: Jeremy.engdahl-johnson@milliman.com\n\n"
-      }
-    },
-    {
-      "insertText": {
-        "location": {
-          "index": 3866
-        },
-        "text": "Press Release: "
-      }
-    },
-    {
-      "insertText": {
-        "location": {
-          "index": 3881
-        },
-        "text": "https://www.businesswire.com/news/home/20251208347861/en/Milliman-Announces-Acquisition-of-MorVest-Capital-Expanding-Leadership-in-Mortgage-Sector-and-MSR-Analytics"
-      }
-    },
-    {
-      "updateTextStyle": {
-        "range": {
-          "startIndex": 3881,
-          "endIndex": 4045
-        },
-        "textStyle": {
-          "link": {
-            "url": "https://www.businesswire.com/news/home/20251208347861/en/Milliman-Announces-Acquisition-of-MorVest-Capital-Expanding-Leadership-in-Mortgage-Sector-and-MSR-Analytics"
-          }
-        },
-        "fields": "link"
-      }
-    },
-    {
-      "insertText": {
-        "location": {
-          "index": 4045
-        },
-        "text": "\n\n================================================================================\n\n"
-      }
-    },
-    {
-      "insertText": {
-        "location": {
-          "index": 4129
-        },
-        "text": "4. Procyon Expands with Addition of OLV Investment Group\n\n"
-      }
-    },
-    {
-      "updateParagraphStyle": {
-        "range": {
-          "startIndex": 4129,
-          "endIndex": 4186
-        },
-        "paragraphStyle": {
-          "namedStyleType": "HEADING_2"
-        },
-        "fields": "namedStyleType"
-      }
-    },
-    {
-      "insertText": {
-        "location": {
-          "index": 4187
-        },
-        "text": "Acquirer: Procyon Partners (Private)  \nTarget: OLV Investment Group  \nTime: 11:17 AM ET  \n\n"
-      }
-    },
-    {
-      "insertText": {
-        "location": {
-          "index": 4278
-        },
-        "text": "Procyon, a leading independent registered investment advisory firm, today announced it has acquired OLV Investment Group, a wealth management firm with multiple locations in Michigan and Texas. The acquisition adds approximately $500 million in assets under management, expands Procyon's physical presence into the Midwest and South, and strengthens the firm's client-first service model with the addition of seven new advisors and thirteen additional team members. The addition brings Procyon's total assets under management to nearly $9 billion and its total headcount to nearly 80. This transaction is Procyon's largest to date and reflects the firm's long-term objective to broaden access to its integrated wealth management model across the United States.\n\n"
-      }
-    },
-    {
-      "insertText": {
-        "location": {
-          "index": 5040
-        },
-        "text": "Contact Information:\n**Media Contact:**\n- Name: Amiee Watts\n- Email: awatts@wattsprgroup.com\n- Phone: 973-615-1683\n\n"
-      }
-    },
-    {
-      "insertText": {
-        "location": {
-          "index": 5156
-        },
-        "text": "Press Release: "
-      }
-    },
-    {
-      "insertText": {
-        "location": {
-          "index": 5171
-        },
-        "text": "https://www.businesswire.com/news/home/20251208803695/en/CORRECTING-and-REPLACING-Procyon-Expands-National-Presence-with-Addition-of-OLV-Investment-Group-Bringing-Total-Client-Assets-to-Nearly-%249-Billion"
-      }
-    },
-    {
-      "updateTextStyle": {
-        "range": {
-          "startIndex": 5171,
-          "endIndex": 5376
-        },
-        "textStyle": {
-          "link": {
-            "url": "https://www.businesswire.com/news/home/20251208803695/en/CORRECTING-and-REPLACING-Procyon-Expands-National-Presence-with-Addition-of-OLV-Investment-Group-Bringing-Total-Client-Assets-to-Nearly-%249-Billion"
-          }
-        },
-        "fields": "link"
-      }
-    },
-    {
-      "insertText": {
-        "location": {
-          "index": 5376
-        },
-        "text": "\n\n================================================================================\n\n"
-      }
-    },
-    {
-      "insertText": {
-        "location": {
-          "index": 5460
-        },
-        "text": "5. Dermatology Associates of San Antonio Joins Epiphany Dermatology\n\n"
-      }
-    },
-    {
-      "updateParagraphStyle": {
-        "range": {
-          "startIndex": 5460,
-          "endIndex": 5528
-        },
-        "paragraphStyle": {
-          "namedStyleType": "HEADING_2"
-        },
-        "fields": "namedStyleType"
-      }
-    },
-    {
-      "insertText": {
-        "location": {
-          "index": 5529
-        },
-        "text": "Acquirer: Epiphany Dermatology (Private)  \nTarget: Dermatology Associates of San Antonio  \nTime: 1:47 PM ET  \n\n"
-      }
-    },
-    {
-      "insertText": {
-        "location": {
-          "index": 5640
-        },
-        "text": "Epiphany Dermatology, a leading dermatology company committed to improving access to exceptional dermatologic care, announced today it has expanded its presence in Texas through its partnership with Dermatology Associates of San Antonio. Founded in 1985 by Dr. William Parsons, Dermatology Associates of San Antonio has a long-established reputation of providing high-quality dermatology services to patients in the greater San Antonio market. Dermatology Associates of San Antonio is an all-physician group comprised of 16 board-certified dermatologists offering a full range of dermatology services, including medical, surgical, Mohs surgery, and cosmetic dermatology services across three locations in San Antonio, TX.\n\n"
-      }
-    },
-    {
-      "insertText": {
-        "location": {
-          "index": 6363
-        },
-        "text": "Contact Information:\n**Contact 1:**\n- Name: Ted Emmert\n- Title: Chief Development Officer\n- Company: Epiphany Dermatology\n- Phone: (512) 628-0465\n- Email: temmert@epiphanydermatology.com\n\n**Contact 2:**\n- Name: Gheorghe Pusta\n- Title: Chief Executive Officer\n- Company: Epiphany Dermatology\n- Phone: (512) 628-0465\n- Email: gpusta@epiphanydermatology.com\n\n"
-      }
-    },
-    {
-      "insertText": {
-        "location": {
-          "index": 6719
-        },
-        "text": "Press Release: "
-      }
-    },
-    {
-      "insertText": {
-        "location": {
-          "index": 6734
+          "index": 1822
         },
         "text": "https://www.businesswire.com/news/home/20251208090761/en/Dermatology-Associates-of-San-Antonio-Joins-Epiphany-Dermatology"
       }
@@ -391,8 +165,8 @@
     {
       "updateTextStyle": {
         "range": {
-          "startIndex": 6734,
-          "endIndex": 6855
+          "startIndex": 1822,
+          "endIndex": 1943
         },
         "textStyle": {
           "link": {
@@ -405,7 +179,7 @@
     {
       "insertText": {
         "location": {
-          "index": 6855
+          "index": 1943
         },
         "text": "\n\n================================================================================\n\n"
       }
@@ -413,16 +187,16 @@
     {
       "insertText": {
         "location": {
-          "index": 6939
+          "index": 2027
         },
-        "text": "6. Quantide Growth Partners Acquires Value Innorruption Advisors\n\n"
+        "text": "3. Jade Global Acquires D4M International\n\n"
       }
     },
     {
       "updateParagraphStyle": {
         "range": {
-          "startIndex": 6939,
-          "endIndex": 7004
+          "startIndex": 2027,
+          "endIndex": 2068
         },
         "paragraphStyle": {
           "namedStyleType": "HEADING_2"
@@ -433,31 +207,31 @@
     {
       "insertText": {
         "location": {
-          "index": 7005
+          "index": 2070
         },
-        "text": "Acquirer: Quantide Growth Partners (Private - formerly Fractional Pricing Advisors)  \nTarget: Value Innorruption Advisors LLC  \nTime: 10:09 AM ET  \n\n"
+        "text": "Date: December 8, 2025 12:45 PM ET\n\n"
       }
     },
     {
       "insertText": {
         "location": {
-          "index": 7154
+          "index": 2106
         },
-        "text": "The company formerly known as Fractional Pricing Advisors has rebranded itself to Quantide Growth Partners along with securing its first acquisition. Quantide Growth Partners founder and CEO Ethan Williams identified a gap in the market: small to medium-sized businesses often lack the budget and the access to the strategic pricing services their larger competitors rely on to drive profitable growth. He launched the startup to disrupt the pricing industry and to dominate the pricing advisory market for SMBs. The acquisition of Value Innorruption Advisors LLC strengthens Quantide's capabilities in pricing strategy and consulting services.\n\n"
+        "text": "Jade Global, Inc., a global leader in digital transformation services, announced it has acquired D4M International, an SAP transformation partner enabling manufacturers to streamline operations and accelerate their digital manufacturing journey. The acquisition brings together Jade's expertise in cloud, data, AI, and enterprise applications with D4M's two decades of domain expertise in SAP S/4HANA and Digital Supply Chain.\n\n"
       }
     },
     {
       "insertText": {
         "location": {
-          "index": 7800
+          "index": 2534
         },
-        "text": "Contact Information:\n**For Quantide Growth Partners:**\n- Name: Ethan Williams\n- Title: Founder & CEO\n- Email: ethan@quantidegrowth.com\n\n"
+        "text": "Contact Information:\nFor Jade Global:\n- Payal Mathur\n  Head of Marketing\n  Email: info@jadeglobal.com\n\nFor D4M International:\n- Michelle Lenoir\n  Head of Marketing\n  Email: info@d4m-int.com\n\n"
       }
     },
     {
       "insertText": {
         "location": {
-          "index": 7936
+          "index": 2725
         },
         "text": "Press Release: "
       }
@@ -465,7 +239,581 @@
     {
       "insertText": {
         "location": {
-          "index": 7951
+          "index": 2740
+        },
+        "text": "https://www.businesswire.com/news/home/20251208769994/en/Jade-Global-Acquires-D4M-International-to-Expand-Smart-Manufacturing-and-SAP-Capabilities-Worldwide"
+      }
+    },
+    {
+      "updateTextStyle": {
+        "range": {
+          "startIndex": 2740,
+          "endIndex": 2896
+        },
+        "textStyle": {
+          "link": {
+            "url": "https://www.businesswire.com/news/home/20251208769994/en/Jade-Global-Acquires-D4M-International-to-Expand-Smart-Manufacturing-and-SAP-Capabilities-Worldwide"
+          }
+        },
+        "fields": "link"
+      }
+    },
+    {
+      "insertText": {
+        "location": {
+          "index": 2896
+        },
+        "text": "\n\n================================================================================\n\n"
+      }
+    },
+    {
+      "insertText": {
+        "location": {
+          "index": 2980
+        },
+        "text": "4. Milliman Acquires MorVest Capital\n\n"
+      }
+    },
+    {
+      "updateParagraphStyle": {
+        "range": {
+          "startIndex": 2980,
+          "endIndex": 3016
+        },
+        "paragraphStyle": {
+          "namedStyleType": "HEADING_2"
+        },
+        "fields": "namedStyleType"
+      }
+    },
+    {
+      "insertText": {
+        "location": {
+          "index": 3018
+        },
+        "text": "Date: December 8, 2025 12:00 PM ET\n\n"
+      }
+    },
+    {
+      "insertText": {
+        "location": {
+          "index": 3054
+        },
+        "text": "Milliman, Inc., a leading global consulting and actuarial firm, announced the acquisition of MorVest Capital, a premier provider of mortgage servicing rights (MSR) analytics, risk management, and advisory services. This strategic move reinforces Milliman's commitment to delivering comprehensive analytical solutions to the mortgage sector and expands its capabilities with MSR valuation, financing, hedging, and brokering.\n\n"
+      }
+    },
+    {
+      "insertText": {
+        "location": {
+          "index": 3479
+        },
+        "text": "Contact Information:\n- Jeremy Engdahl-Johnson\n  Milliman, Inc.\n  Phone: +1 646.473.3021\n  Email: Jeremy.engdahl-johnson@milliman.com\n\n"
+      }
+    },
+    {
+      "insertText": {
+        "location": {
+          "index": 3613
+        },
+        "text": "Press Release: "
+      }
+    },
+    {
+      "insertText": {
+        "location": {
+          "index": 3628
+        },
+        "text": "https://www.businesswire.com/news/home/20251208347861/en/Milliman-Announces-Acquisition-of-MorVest-Capital-Expanding-Leadership-in-Mortgage-Sector-and-MSR-Analytics"
+      }
+    },
+    {
+      "updateTextStyle": {
+        "range": {
+          "startIndex": 3628,
+          "endIndex": 3792
+        },
+        "textStyle": {
+          "link": {
+            "url": "https://www.businesswire.com/news/home/20251208347861/en/Milliman-Announces-Acquisition-of-MorVest-Capital-Expanding-Leadership-in-Mortgage-Sector-and-MSR-Analytics"
+          }
+        },
+        "fields": "link"
+      }
+    },
+    {
+      "insertText": {
+        "location": {
+          "index": 3792
+        },
+        "text": "\n\n================================================================================\n\n"
+      }
+    },
+    {
+      "insertText": {
+        "location": {
+          "index": 3876
+        },
+        "text": "5. Procyon Acquires OLV Investment Group\n\n"
+      }
+    },
+    {
+      "updateParagraphStyle": {
+        "range": {
+          "startIndex": 3876,
+          "endIndex": 3916
+        },
+        "paragraphStyle": {
+          "namedStyleType": "HEADING_2"
+        },
+        "fields": "namedStyleType"
+      }
+    },
+    {
+      "insertText": {
+        "location": {
+          "index": 3918
+        },
+        "text": "Date: December 8, 2025 11:17 AM ET\n\n"
+      }
+    },
+    {
+      "insertText": {
+        "location": {
+          "index": 3954
+        },
+        "text": "Procyon, a leading independent registered investment advisory firm, announced it has acquired OLV Investment Group, a wealth management firm with multiple locations in Michigan and Texas. The acquisition adds approximately $500 million in assets under management, expands Procyon's physical presence into the Midwest and South, and brings the firm's total assets under management to nearly $9 billion.\n\n"
+      }
+    },
+    {
+      "insertText": {
+        "location": {
+          "index": 4357
+        },
+        "text": "Contact Information:\n- Amiee Watts\n  Email: awatts@wattsprgroup.com\n  Phone: 973-615-1683\n\n"
+      }
+    },
+    {
+      "insertText": {
+        "location": {
+          "index": 4448
+        },
+        "text": "Press Release: "
+      }
+    },
+    {
+      "insertText": {
+        "location": {
+          "index": 4463
+        },
+        "text": "https://www.businesswire.com/news/home/20251208803695/en/CORRECTING-and-REPLACING-Procyon-Expands-National-Presence-with-Addition-of-OLV-Investment-Group-Bringing-Total-Client-Assets-to-Nearly-%249-Billion"
+      }
+    },
+    {
+      "updateTextStyle": {
+        "range": {
+          "startIndex": 4463,
+          "endIndex": 4668
+        },
+        "textStyle": {
+          "link": {
+            "url": "https://www.businesswire.com/news/home/20251208803695/en/CORRECTING-and-REPLACING-Procyon-Expands-National-Presence-with-Addition-of-OLV-Investment-Group-Bringing-Total-Client-Assets-to-Nearly-%249-Billion"
+          }
+        },
+        "fields": "link"
+      }
+    },
+    {
+      "insertText": {
+        "location": {
+          "index": 4668
+        },
+        "text": "\n\n================================================================================\n\n"
+      }
+    },
+    {
+      "insertText": {
+        "location": {
+          "index": 4752
+        },
+        "text": "6. CellPay Acquires Tila Top Up\n\n"
+      }
+    },
+    {
+      "updateParagraphStyle": {
+        "range": {
+          "startIndex": 4752,
+          "endIndex": 4783
+        },
+        "paragraphStyle": {
+          "namedStyleType": "HEADING_2"
+        },
+        "fields": "namedStyleType"
+      }
+    },
+    {
+      "insertText": {
+        "location": {
+          "index": 4785
+        },
+        "text": "Date: December 8, 2025 10:00 AM ET\n\n"
+      }
+    },
+    {
+      "insertText": {
+        "location": {
+          "index": 4821
+        },
+        "text": "Zulie Venture Inc., operating as CellPay, announced the acquisition of Tila Top Up, a rapidly growing prepaid and digital recharge platform. The acquisition significantly increases CellPay's merchant footprint with thousands of new retail locations nationwide, accelerating its mission to deliver convenient access to essential wireless and digital payment services for underserved and cash-preferred consumers.\n\n"
+      }
+    },
+    {
+      "insertText": {
+        "location": {
+          "index": 5234
+        },
+        "text": "Contact Information:\nPress Contact:\n- Email: PJ@GETCELLPAY.COM\n\n"
+      }
+    },
+    {
+      "insertText": {
+        "location": {
+          "index": 5298
+        },
+        "text": "Press Release: "
+      }
+    },
+    {
+      "insertText": {
+        "location": {
+          "index": 5313
+        },
+        "text": "https://www.businesswire.com/news/home/20251204409198/en/CellPay-Announces-Acquisition-of-Tila-Top-Up-Expanding-Nationwide-Retail-Access-and-Accelerating-Financial-Inclusion"
+      }
+    },
+    {
+      "updateTextStyle": {
+        "range": {
+          "startIndex": 5313,
+          "endIndex": 5486
+        },
+        "textStyle": {
+          "link": {
+            "url": "https://www.businesswire.com/news/home/20251204409198/en/CellPay-Announces-Acquisition-of-Tila-Top-Up-Expanding-Nationwide-Retail-Access-and-Accelerating-Financial-Inclusion"
+          }
+        },
+        "fields": "link"
+      }
+    },
+    {
+      "insertText": {
+        "location": {
+          "index": 5486
+        },
+        "text": "\n\n================================================================================\n\n"
+      }
+    },
+    {
+      "insertText": {
+        "location": {
+          "index": 5570
+        },
+        "text": "7. MAI Capital Management Acquires Lowe Wealth Advisors\n\n"
+      }
+    },
+    {
+      "updateParagraphStyle": {
+        "range": {
+          "startIndex": 5570,
+          "endIndex": 5625
+        },
+        "paragraphStyle": {
+          "namedStyleType": "HEADING_2"
+        },
+        "fields": "namedStyleType"
+      }
+    },
+    {
+      "insertText": {
+        "location": {
+          "index": 5627
+        },
+        "text": "Date: December 8, 2025 9:08 AM ET\n\n"
+      }
+    },
+    {
+      "insertText": {
+        "location": {
+          "index": 5662
+        },
+        "text": "MAI Capital Management (\"MAI\"), a registered investment advisor (RIA), announced the acquisition of Lowe Wealth Advisors (\"LWA\"), a boutique, family-led RIA with $527 million in assets under management (AUM). Based in Columbia, Maryland, LWA serves 470 households nationwide with a team-based, planning-first approach. The addition brings MAI's footprint in Maryland to five practices.\n\n"
+      }
+    },
+    {
+      "insertText": {
+        "location": {
+          "index": 6049
+        },
+        "text": "Contact Information:\n- Jimmy Moock\n  Phone: 610-304-4570\n  Email: jimmy@streetcredpr.com\n\n- Adam Redling\n  Phone: 440-773-9299\n  Email: adam@streetcredpr.com\n\n"
+      }
+    },
+    {
+      "insertText": {
+        "location": {
+          "index": 6208
+        },
+        "text": "Press Release: "
+      }
+    },
+    {
+      "insertText": {
+        "location": {
+          "index": 6223
+        },
+        "text": "https://www.businesswire.com/news/home/20251208607415/en/MAI-Capital-Management-Expands-Mid-Atlantic-Presence-With-Addition-of-Lowe-Wealth-Advisors"
+      }
+    },
+    {
+      "updateTextStyle": {
+        "range": {
+          "startIndex": 6223,
+          "endIndex": 6370
+        },
+        "textStyle": {
+          "link": {
+            "url": "https://www.businesswire.com/news/home/20251208607415/en/MAI-Capital-Management-Expands-Mid-Atlantic-Presence-With-Addition-of-Lowe-Wealth-Advisors"
+          }
+        },
+        "fields": "link"
+      }
+    },
+    {
+      "insertText": {
+        "location": {
+          "index": 6370
+        },
+        "text": "\n\n================================================================================\n\n"
+      }
+    },
+    {
+      "insertText": {
+        "location": {
+          "index": 6454
+        },
+        "text": "8. EPIC Insurance Acquires Sentry Transportation\n\n"
+      }
+    },
+    {
+      "updateParagraphStyle": {
+        "range": {
+          "startIndex": 6454,
+          "endIndex": 6502
+        },
+        "paragraphStyle": {
+          "namedStyleType": "HEADING_2"
+        },
+        "fields": "namedStyleType"
+      }
+    },
+    {
+      "insertText": {
+        "location": {
+          "index": 6504
+        },
+        "text": "Date: December 8, 2025 9:08 AM ET\n\n"
+      }
+    },
+    {
+      "insertText": {
+        "location": {
+          "index": 6539
+        },
+        "text": "EPIC Insurance Brokers & Consultants (\"EPIC\"), a national insurance brokerage and consulting firm, announced the acquisition of Sentry Transportation's (\"Sentry\") direct writing operation, expanding EPIC Transportation & Logistics. The Sentry team joins Interstate Motor Carriers, an EPIC company, bringing more than 500 clients and expanding the scale and expertise of EPIC's national transportation platform.\n\n"
+      }
+    },
+    {
+      "insertText": {
+        "location": {
+          "index": 6951
+        },
+        "text": "Contact Information:\n- StreetCred PR\n  Email: epic@streetcredpr.com\n\n- Lexie Brazil\n  Email: lexie@streetcredpr.com\n  Phone: 214-773-7114\n\n- Ella Lawrence\n  Email: ella@streetcredpr.com\n  Phone: 630-220-2307\n\n"
+      }
+    },
+    {
+      "insertText": {
+        "location": {
+          "index": 7160
+        },
+        "text": "Press Release: "
+      }
+    },
+    {
+      "insertText": {
+        "location": {
+          "index": 7175
+        },
+        "text": "https://www.businesswire.com/news/home/20251208084917/en/EPIC-Insurance-Brokers-Consultants-Announces-Addition-of-Sentry-Transportations-Direct-Writing-Operation"
+      }
+    },
+    {
+      "updateTextStyle": {
+        "range": {
+          "startIndex": 7175,
+          "endIndex": 7336
+        },
+        "textStyle": {
+          "link": {
+            "url": "https://www.businesswire.com/news/home/20251208084917/en/EPIC-Insurance-Brokers-Consultants-Announces-Addition-of-Sentry-Transportations-Direct-Writing-Operation"
+          }
+        },
+        "fields": "link"
+      }
+    },
+    {
+      "insertText": {
+        "location": {
+          "index": 7336
+        },
+        "text": "\n\n================================================================================\n\n"
+      }
+    },
+    {
+      "insertText": {
+        "location": {
+          "index": 7420
+        },
+        "text": "9. Semify Acquires Dragon Metrics\n\n"
+      }
+    },
+    {
+      "updateParagraphStyle": {
+        "range": {
+          "startIndex": 7420,
+          "endIndex": 7453
+        },
+        "paragraphStyle": {
+          "namedStyleType": "HEADING_2"
+        },
+        "fields": "namedStyleType"
+      }
+    },
+    {
+      "insertText": {
+        "location": {
+          "index": 7455
+        },
+        "text": "Date: December 8, 2025 9:00 AM ET\n\n"
+      }
+    },
+    {
+      "insertText": {
+        "location": {
+          "index": 7490
+        },
+        "text": "Semify, a leading white-label digital marketing software platform specializing in Search Engine Optimization (SEO), Paid Search Advertising (PPC), Paid Social Advertising, and AI Optimization (AIO), announced the acquisition of Dragon Metrics, an international SEO/AI/PPC reporting software platform based in Hong Kong. The strategic acquisition significantly expands Semify's global measurement capabilities and accelerates its AI optimization offerings.\n\n"
+      }
+    },
+    {
+      "insertText": {
+        "location": {
+          "index": 7947
+        },
+        "text": "Contact Information:\n- Valerie Silverman Kerr\n  VSK Public Relations\n  Email: valerie@vsk-publicrelations.com\n  Phone: 914-806-6647\n\n"
+      }
+    },
+    {
+      "insertText": {
+        "location": {
+          "index": 8080
+        },
+        "text": "Press Release: "
+      }
+    },
+    {
+      "insertText": {
+        "location": {
+          "index": 8095
+        },
+        "text": "https://www.businesswire.com/news/home/20251208001903/en/Semify-Acquires-Leading-Digital-Marketing-Reporting-Platform-Dragon-Metrics-to-Accelerate-Global-AI-Optimization-Capabilities-and-Expand-International-Market-Reach"
+      }
+    },
+    {
+      "updateTextStyle": {
+        "range": {
+          "startIndex": 8095,
+          "endIndex": 8315
+        },
+        "textStyle": {
+          "link": {
+            "url": "https://www.businesswire.com/news/home/20251208001903/en/Semify-Acquires-Leading-Digital-Marketing-Reporting-Platform-Dragon-Metrics-to-Accelerate-Global-AI-Optimization-Capabilities-and-Expand-International-Market-Reach"
+          }
+        },
+        "fields": "link"
+      }
+    },
+    {
+      "insertText": {
+        "location": {
+          "index": 8315
+        },
+        "text": "\n\n================================================================================\n\n"
+      }
+    },
+    {
+      "insertText": {
+        "location": {
+          "index": 8399
+        },
+        "text": "10. Quantide Growth Partners Acquires Value Innorruption\n\n"
+      }
+    },
+    {
+      "updateParagraphStyle": {
+        "range": {
+          "startIndex": 8399,
+          "endIndex": 8455
+        },
+        "paragraphStyle": {
+          "namedStyleType": "HEADING_2"
+        },
+        "fields": "namedStyleType"
+      }
+    },
+    {
+      "insertText": {
+        "location": {
+          "index": 8457
+        },
+        "text": "Date: December 8, 2025 10:09 AM ET\n\n"
+      }
+    },
+    {
+      "insertText": {
+        "location": {
+          "index": 8493
+        },
+        "text": "The company formerly known as Fractional Pricing Advisors has rebranded itself to Quantide Growth Partners along with securing its first acquisition. Quantide Growth Partners acquired Value Innorruption Advisors LLC, strengthening its capabilities in pricing strategy and consulting services. The company helps small to medium-sized businesses unlock the budget and access to strategic pricing services their larger competitors rely on to drive profitable growth.\n\n"
+      }
+    },
+    {
+      "insertText": {
+        "location": {
+          "index": 8958
+        },
+        "text": "Contact Information:\n- Ethan Williams\n  Founder & CEO\n  Email: ethan@quantidegrowth.com\n\n"
+      }
+    },
+    {
+      "insertText": {
+        "location": {
+          "index": 9047
+        },
+        "text": "Press Release: "
+      }
+    },
+    {
+      "insertText": {
+        "location": {
+          "index": 9062
         },
         "text": "https://www.businesswire.com/news/home/20251208544554/en/Pricing-Solutions-Startup-Quantide-Growth-Partners-Acquires-Value-Innorruption-Advisors-LLC"
       }
@@ -473,8 +821,8 @@
     {
       "updateTextStyle": {
         "range": {
-          "startIndex": 7951,
-          "endIndex": 8099
+          "startIndex": 9062,
+          "endIndex": 9210
         },
         "textStyle": {
           "link": {
@@ -487,7 +835,89 @@
     {
       "insertText": {
         "location": {
-          "index": 8099
+          "index": 9210
+        },
+        "text": "\n\n================================================================================\n\n"
+      }
+    },
+    {
+      "insertText": {
+        "location": {
+          "index": 9294
+        },
+        "text": "11. Hildene Capital Management Acquires SILAC\n\n"
+      }
+    },
+    {
+      "updateParagraphStyle": {
+        "range": {
+          "startIndex": 9294,
+          "endIndex": 9339
+        },
+        "paragraphStyle": {
+          "namedStyleType": "HEADING_2"
+        },
+        "fields": "namedStyleType"
+      }
+    },
+    {
+      "insertText": {
+        "location": {
+          "index": 9341
+        },
+        "text": "Date: December 8, 2025 6:46 AM ET\n\n"
+      }
+    },
+    {
+      "insertText": {
+        "location": {
+          "index": 9376
+        },
+        "text": "Hildene Capital Management, LLC, an $18+ billion credit-focused alternative asset manager, announced it has signed a definitive agreement to acquire SILAC, Inc., the parent company of SILAC Insurance Company (\"SILAC\"), a leading provider of fixed and fixed indexed annuity products in the U.S. Upon receiving regulatory approval, Hildene will acquire all of the outstanding common equity of SILAC for approximately $550 million in cash.\n\n"
+      }
+    },
+    {
+      "insertText": {
+        "location": {
+          "index": 9814
+        },
+        "text": "Contact Information:\nFor Hildene Capital Management:\n- Email: pro-Hildene@prosek.com\n\nFor SILAC:\n- Email: Pro-SILAC@prosek.com\n\n"
+      }
+    },
+    {
+      "insertText": {
+        "location": {
+          "index": 9942
+        },
+        "text": "Press Release: "
+      }
+    },
+    {
+      "insertText": {
+        "location": {
+          "index": 9957
+        },
+        "text": "https://www.businesswire.com/news/home/20251208437669/en/Hildene-Capital-Management-Announces-Purchase-Agreement-to-Acquire-Annuity-Provider-SILAC"
+      }
+    },
+    {
+      "updateTextStyle": {
+        "range": {
+          "startIndex": 9957,
+          "endIndex": 10103
+        },
+        "textStyle": {
+          "link": {
+            "url": "https://www.businesswire.com/news/home/20251208437669/en/Hildene-Capital-Management-Announces-Purchase-Agreement-to-Acquire-Annuity-Provider-SILAC"
+          }
+        },
+        "fields": "link"
+      }
+    },
+    {
+      "insertText": {
+        "location": {
+          "index": 10103
         },
         "text": "\n\n================================================================================\n\n"
       }
