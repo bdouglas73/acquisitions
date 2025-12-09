@@ -407,55 +407,16 @@ def main():
             f.write(report_content)
         log("Created new report")
 
-    # Generate JSON report for Make.com
-    json_filename = f"enhanced_ma_report_{today}.json"
-    json_path = os.path.join(GITHUB_REPO_PATH, json_filename)
-    
-    # If updating, we should read the existing JSON and append, or just overwrite with full list if we had it
-    # But since we only have 'processed_releases' (new ones), we might want to just save the new ones 
-    # or read the existing markdown to reconstruct the full list.
-    # For simplicity and Make.com compatibility, let's save the NEW items to a separate file or overwrite the daily file with ALL items if possible.
-    # Make.com likely expects the full list or just the new ones.
-    # Let's save the full list of TODAY's acquisitions to the JSON file.
-    
-    # We need to reconstruct the full list from the markdown or just save what we have.
-    # Since 'processed_releases' only has new ones, let's try to read the existing JSON if it exists.
-    
-    all_json_data = []
-    if os.path.exists(json_path):
-        try:
-            with open(json_path, 'r', encoding='utf-8') as f:
-                all_json_data = json.load(f)
-        except:
-            pass
-            
-    # Append new releases
-    all_json_data.extend(processed_releases)
-    
-    with open(json_path, 'w', encoding='utf-8') as f:
-        json.dump(all_json_data, f, indent=2)
-    log(f"Created/Updated JSON report: {json_filename}")
-    
     try:
         os.chdir(GITHUB_REPO_PATH)
         subprocess.run(["git", "config", "user.name", "GitHub Action"], check=True)
         subprocess.run(["git", "config", "user.email", "action@github.com"], check=True)
         subprocess.run(["git", "add", report_filename], check=True)
-        subprocess.run(["git", "add", json_filename], check=True)
         
         commit_message = f"Add {len(processed_releases)} M&A reports for {today}"
         subprocess.run(["git", "commit", "-m", commit_message], check=True)
         subprocess.run(["git", "push"], check=True)
         log("Successfully pushed to GitHub")
-        
-        try:
-            requests.post(MAKE_WEBHOOK_URL, json={
-                "date": today,
-                "count": len(processed_releases),
-                "message": "New M&A reports added"
-            }, timeout=5)
-        except:
-            pass
             
     except Exception as e:
         log(f"Error during git operations: {e}")
