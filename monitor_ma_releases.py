@@ -38,7 +38,11 @@ from selenium.webdriver.support import expected_conditions as EC
 
 # Configuration
 RSS_URL = "https://feed.businesswire.com/rss/home/?rss=G1QFDERJXkJeEFtRWA=="
-GITHUB_REPO_PATH = "/home/ubuntu/acquisitions"
+# Use current directory if running in CI, otherwise default to sandbox path
+if os.environ.get('GITHUB_ACTIONS'):
+    GITHUB_REPO_PATH = os.getcwd()
+else:
+    GITHUB_REPO_PATH = os.path.dirname(os.path.abspath(__file__))
 USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 
 def log(message):
