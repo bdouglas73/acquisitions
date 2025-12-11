@@ -46,6 +46,31 @@ def log(message):
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     print(f"[{timestamp}] {message}")
 
+def trigger_webhook(report_date, total_acquisitions, report_file):
+    """Trigger Make.com webhook with report data"""
+    webhook_url = "https://hook.us2.make.com/4c7xqjcjt3yxhbdvnxkw5u6qxr6cqb3y"
+    github_url = f"https://github.com/bdouglas73/acquisitions/blob/main/{report_file}"
+    
+    payload = {
+        "report_date": report_date,
+        "report_type": "enhanced",
+        "total_acquisitions": total_acquisitions,
+        "github_url": github_url,
+        "report_file": report_file
+    }
+    
+    try:
+        response = requests.post(webhook_url, json=payload, timeout=10)
+        if response.status_code == 200:
+            log(f"Successfully triggered webhook for {report_file}")
+            return True
+        else:
+            log(f"Webhook returned status {response.status_code}")
+            return False
+    except Exception as e:
+        log(f"Failed to trigger webhook: {e}")
+        return False
+
 def get_today_date():
     """Get today's date in YYYY-MM-DD format"""
     return datetime.now().strftime("%Y-%m-%d")
@@ -452,6 +477,10 @@ def main():
         f.write(report_content)
         
     log(f"Successfully updated report with {len(processed_new_entries)} new entries. Total: {len(all_entries)}")
+    
+    # 6. Trigger webhook
+    report_filename = os.path.basename(report_path)
+    trigger_webhook(today, len(all_entries), report_filename)
 
 if __name__ == "__main__":
     main()
